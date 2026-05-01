@@ -138,32 +138,6 @@ const initialInputs: ForgeInputs = {
     "Write with strong physical imagery, a huge chorus, and modern heavy production energy.",
 };
 
-const demoResult: ForgeResult = {
-  title: "Architects of the Ashfall",
-  lyrics: `[VERSE 1]
-Smoke in the rafters, iron in my lungs
-We built our vows where the furnace tongues
-Licked at the bones of a faith gone thin
-And taught the wolves how to wear our skin
-
-[CHORUS]
-We are the architects of the ashfall
-Crowned in the sparks of a dead withdrawal
-Hammer the night till the black veins ring
-Out of the fire, let the endtime sing
-
-[VERSE 2]
-Teeth in the static, names in the wire
-Hands full of ruin and borrowed fire
-Every promise a blade half-drawn
-Every saint just rust by dawn`,
-  musicPrompt: `Industrial metal with metalcore momentum, 148 BPM.
-Cold mechanical intro, drop-C guitars, sharp gated snare,
-massive halftime chorus, aggressive shouted vocals with a
-melodic hook layer, dense sub bass, sparks-and-smoke atmosphere,
-modern wide production, dramatic breakdown before final chorus.`,
-};
-
 const STYLE_OPTIONS = [
   "Industrial Metal",
   "Metalcore",
@@ -252,7 +226,11 @@ const DIRECTION_IDEAS = [
 
 export default function Home() {
   const [inputs, setInputs] = useState<ForgeInputs>(initialInputs);
-  const [result, setResult] = useState<ForgeResult>(demoResult);
+  const [result, setResult] = useState<ForgeResult>({
+    title: "",
+    lyrics: "",
+    musicPrompt: "",
+  });
   const [hasGenerated, setHasGenerated] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -282,54 +260,45 @@ export default function Home() {
   }, [inputs.mode]);
 
   const handleForge = async () => {
-    setIsGenerating(true);
+    try {
+      setIsGenerating(true);
 
-    await new Promise((resolve) => setTimeout(resolve, 900));
+      const response = await fetch("/api/forge", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...inputs,
+          selectedStyles,
+        }),
+      });
 
-    const generatedTitle =
-      inputs.theme.trim().length > 0
-        ? `Forged from ${inputs.theme.trim()}`
-        : "Forged in the Static";
+      const data = await response.json();
 
-    const generatedLyrics = `[VERSE 1]
-${inputs.theme || "Ash"} in the marrow, smoke in the rain
-Built from the pressure, tempered by pain
-Language: ${inputs.language}
-Mood: ${inputs.mood}
+      if (!response.ok) {
+        throw new Error(data?.error || "Generation failed");
+      }
 
-[CHORUS]
-We rise in the furnace, we carry the sound
-Strike the dark iron and shake the ground
-Subgenre: ${inputs.subgenre}
-Intensity: ${inputs.intensity}
+      setResult({
+        title: data.title,
+        lyrics: data.lyrics,
+        musicPrompt: data.musicPrompt,
+      });
 
-[VERSE 2]
-Structure carved in sparks and wire
-Every cut feeds the engine fire
-Direction: ${inputs.creativeDirection || "No extra direction given"}`;
-
-    const generatedMusicPrompt = `${inputs.subgenre}, ${inputs.intensity.toLowerCase()} intensity, ${inputs.mood.toLowerCase()} emotional tone. Language focus: ${inputs.language}. Song structure: ${inputs.structure}. Creative direction: ${
-      inputs.creativeDirection || "none provided"
-    }. Selected style cues: ${
-      selectedStyles.length ? selectedStyles.join(", ") : "none"
-    }. Build a modern heavy arrangement with a dramatic chorus, dense low end, strong rhythmic identity, and cinematic transitions.`;
-
-    setResult({
-      title: generatedTitle,
-      lyrics: generatedLyrics,
-      musicPrompt: generatedMusicPrompt,
-    });
-
-    setHasGenerated(true);
-    setIsGenerating(false);
+      setHasGenerated(true);
+    } catch (error: any) {
+      console.error(error);
+      alert(error?.message || "Generation failed");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const filteredStyles = useMemo(() => {
     const q = styleSearch.trim().toLowerCase();
     if (!q) return STYLE_OPTIONS;
-    return STYLE_OPTIONS.filter((style) =>
-      style.toLowerCase().includes(q)
-    );
+    return STYLE_OPTIONS.filter((style) => style.toLowerCase().includes(q));
   }, [styleSearch]);
 
   const toggleStyle = (style: string) => {
@@ -405,9 +374,7 @@ Direction: ${inputs.creativeDirection || "No extra direction given"}`;
       `Title: ${result.title}`,
       "",
       inputs.mode !== "music" ? `Lyrics:\n${result.lyrics}` : "",
-      inputs.mode !== "lyrics"
-        ? `Music Prompt:\n${result.musicPrompt}`
-        : "",
+      inputs.mode !== "lyrics" ? `Music Prompt:\n${result.musicPrompt}` : "",
     ]
       .filter(Boolean)
       .join("\n\n");
@@ -509,317 +476,346 @@ Direction: ${inputs.creativeDirection || "No extra direction given"}`;
     : `Browse styles${selectedStyles.length ? ` (${selectedStyles.length})` : ""}`;
 
   return (
-    <div className="mf-grid">
-      <section className="mf-panel">
-        <div className="mf-panel-inner">
-          <div className="mf-section-label">Control deck</div>
-
-          <h1 className="mf-hero-title">Forge your next heavy track</h1>
-
-          <p className="mf-hero-copy">
-            Shape subgenre, mood, structure, and output mode. Generate
-            lyrics, music prompts, or both from one cinematic control
-            surface.
-          </p>
-
-          <div className="mf-status-row">
-            <span className="mf-status-pill">Mode: {activeOutputLabel}</span>
-            <span className="mf-status-pill">Ready for live generation</span>
+    <div className="mf-app-shell">
+      <div className="mf-page-frame">
+        <header className="mf-topbar">
+          <div className="mf-topbar-left">
+            <div className="mf-logo-mark" />
+            <div className="mf-logo-text">
+              <div className="mf-logo-title">Metal Forge v1</div>
+              <div className="mf-logo-subtitle">Heavy lyrics & music prompts</div>
+            </div>
           </div>
 
-          <div style={{ display: "grid", gap: "16px" }}>
-            <div>
-              <div className="mf-section-label">Output mode</div>
-              <div className="mf-segment-row">
-                <button
-                  className={`mf-segment-button ${
-                    inputs.mode === "both"
-                      ? "mf-segment-button-active"
-                      : ""
-                  }`}
-                  onClick={() => updateField("mode", "both")}
-                  type="button"
-                >
-                  Both
-                </button>
-                <button
-                  className={`mf-segment-button ${
-                    inputs.mode === "lyrics"
-                      ? "mf-segment-button-active"
-                      : ""
-                  }`}
-                  onClick={() => updateField("mode", "lyrics")}
-                  type="button"
-                >
-                  Lyrics
-                </button>
-                <button
-                  className={`mf-segment-button ${
-                    inputs.mode === "music"
-                      ? "mf-segment-button-active"
-                      : ""
-                  }`}
-                  onClick={() => updateField("mode", "music")}
-                  type="button"
-                >
-                  Music
-                </button>
+          <div className="mf-topbar-actions">
+            <a
+              href="#"
+              className="mf-ghost-button"
+            >
+              Forge Studio
+            </a>
+            <a
+              href="https://github.com/Alex-JBE/metal-forge-v1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mf-ghost-button"
+            >
+              GitHub
+            </a>
+          </div>
+        </header>
+
+        <div className="mf-grid">
+          <section className="mf-panel">
+            <div className="mf-panel-inner">
+              <div className="mf-section-label">Control deck</div>
+
+              <h1 className="mf-hero-title">Forge your next heavy track</h1>
+
+              <p className="mf-hero-copy">
+                Shape subgenre, mood, structure, and output mode. Generate
+                lyrics, music prompts, or both from one cinematic control
+                surface.
+              </p>
+
+              <div className="mf-status-row">
+                <span className="mf-status-pill">Mode: {activeOutputLabel}</span>
+                <span className="mf-status-pill">Ready for live generation</span>
               </div>
-            </div>
 
-            <hr className="mf-divider" />
-
-            <div className="mf-form-grid">
-              {lyricFormFields.map((field) => {
-                const isOpen = openDropdown === field.key;
-
-                return (
-                  <div className="mf-field" key={field.key}>
-                    <span className="mf-field-label">{field.label}</span>
-
-                    <div className="mf-combobox">
-                      <input
-                        type="text"
-                        className="mf-input"
-                        value={inputs[field.key]}
-                        onChange={(e) => updateField(field.key, e.target.value)}
-                        placeholder={field.placeholder}
-                      />
-                      <button
-                        type="button"
-                        className="mf-combobox-trigger"
-                        aria-label={`Show ${field.label} options`}
-                        onClick={() =>
-                          setOpenDropdown((prev) =>
-                            prev === field.key ? null : field.key
-                          )
-                        }
-                      ></button>
-
-                      {isOpen && (
-                        <div className="mf-combobox-menu">
-                          {field.options.map((option) => (
-                            <button
-                              key={option.value}
-                              type="button"
-                              className="mf-combobox-option"
-                              onClick={() => {
-                                updateField(field.key, option.value);
-                                setOpenDropdown(null);
-                              }}
-                            >
-                              {option.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+              <div style={{ display: "grid", gap: "16px" }}>
+                <div>
+                  <div className="mf-section-label">Output mode</div>
+                  <div className="mf-segment-row">
+                    <button
+                      className={`mf-segment-button ${
+                        inputs.mode === "both" ? "mf-segment-button-active" : ""
+                      }`}
+                      onClick={() => updateField("mode", "both")}
+                      type="button"
+                    >
+                      Both
+                    </button>
+                    <button
+                      className={`mf-segment-button ${
+                        inputs.mode === "lyrics" ? "mf-segment-button-active" : ""
+                      }`}
+                      onClick={() => updateField("mode", "lyrics")}
+                      type="button"
+                    >
+                      Lyrics
+                    </button>
+                    <button
+                      className={`mf-segment-button ${
+                        inputs.mode === "music" ? "mf-segment-button-active" : ""
+                      }`}
+                      onClick={() => updateField("mode", "music")}
+                      type="button"
+                    >
+                      Music
+                    </button>
                   </div>
-                );
-              })}
-            </div>
+                </div>
 
-            <hr className="mf-divider" />
+                <hr className="mf-divider" />
 
-            <div style={{ display: "grid", gap: "14px" }}>
-              <div className="mf-field">
-                <span className="mf-field-label">Style palette</span>
+                <div className="mf-form-grid">
+                  {lyricFormFields.map((field) => {
+                    const isOpen = openDropdown === field.key;
 
-                <button
-                  className="mf-secondary-button"
-                  type="button"
-                  onClick={() => setStylesOpen((prev) => !prev)}
-                >
-                  {styleBrowseLabel}
-                </button>
+                    return (
+                      <div className="mf-field" key={field.key}>
+                        <span className="mf-field-label">{field.label}</span>
 
-                {stylesOpen && (
-                  <div className="mf-style-picker">
-                    <input
-                      className="mf-input"
-                      value={styleSearch}
-                      onChange={(e) => setStyleSearch(e.target.value)}
-                      placeholder="Search styles..."
-                    />
-
-                    <div className="mf-style-list">
-                      {filteredStyles.map((style) => {
-                        const active = selectedStyles.includes(style);
-
-                        return (
+                        <div className="mf-combobox">
+                          <input
+                            type="text"
+                            className="mf-input"
+                            value={inputs[field.key]}
+                            onChange={(e) =>
+                              updateField(field.key, e.target.value)
+                            }
+                            placeholder={field.placeholder}
+                          />
                           <button
-                            key={style}
                             type="button"
-                            className={`mf-style-option ${
-                              active ? "mf-style-option-active" : ""
-                            }`}
-                            onClick={() => toggleStyle(style)}
-                          >
+                            className="mf-combobox-trigger"
+                            aria-label={`Show ${field.label} options`}
+                            onClick={() =>
+                              setOpenDropdown((prev) =>
+                                prev === field.key ? null : field.key
+                              )
+                            }
+                          ></button>
+
+                          {isOpen && (
+                            <div className="mf-combobox-menu">
+                              {field.options.map((option) => (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  className="mf-combobox-option"
+                                  onClick={() => {
+                                    updateField(field.key, option.value);
+                                    setOpenDropdown(null);
+                                  }}
+                                >
+                                  {option.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <hr className="mf-divider" />
+
+                <div style={{ display: "grid", gap: "14px" }}>
+                  <div className="mf-field">
+                    <span className="mf-field-label">Style palette</span>
+
+                    <button
+                      className="mf-secondary-button"
+                      type="button"
+                      onClick={() => setStylesOpen((prev) => !prev)}
+                    >
+                      {styleBrowseLabel}
+                    </button>
+
+                    {stylesOpen && (
+                      <div className="mf-style-picker">
+                        <input
+                          className="mf-input"
+                          value={styleSearch}
+                          onChange={(e) => setStyleSearch(e.target.value)}
+                          placeholder="Search styles..."
+                        />
+
+                        <div className="mf-style-list">
+                          {filteredStyles.map((style) => {
+                            const active = selectedStyles.includes(style);
+
+                            return (
+                              <button
+                                key={style}
+                                type="button"
+                                className={`mf-style-option ${
+                                  active ? "mf-style-option-active" : ""
+                                }`}
+                                onClick={() => toggleStyle(style)}
+                              >
+                                {style}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedStyles.length > 0 && (
+                      <div className="mf-selected-styles">
+                        {selectedStyles.map((style) => (
+                          <span key={style} className="mf-chip">
                             {style}
-                          </button>
-                        );
-                      })}
-                    </div>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
 
-                {selectedStyles.length > 0 && (
-                  <div className="mf-selected-styles">
-                    {selectedStyles.map((style) => (
-                      <span key={style} className="mf-chip">
-                        {style}
-                      </span>
-                    ))}
+                  <label className="mf-field">
+                    <span className="mf-field-label">Creative direction</span>
+                    <textarea
+                      className="mf-textarea"
+                      value={inputs.creativeDirection}
+                      onChange={(e) =>
+                        updateField("creativeDirection", e.target.value)
+                      }
+                      placeholder="Optional. Leave empty or click Inspire me."
+                    />
+                  </label>
+
+                  <div className="mf-action-row">
+                    <button
+                      className="mf-secondary-button"
+                      type="button"
+                      onClick={generateCreativeDirection}
+                    >
+                      Inspire me
+                    </button>
+
+                    {inputs.creativeDirection.trim().length > 0 && (
+                      <button
+                        className="mf-mini-button"
+                        type="button"
+                        onClick={() => updateField("creativeDirection", "")}
+                      >
+                        Clear
+                      </button>
+                    )}
                   </div>
-                )}
-              </div>
+                </div>
 
-              <label className="mf-field">
-                <span className="mf-field-label">Creative direction</span>
-                <textarea
-                  className="mf-textarea"
-                  value={inputs.creativeDirection}
-                  onChange={(e) =>
-                    updateField("creativeDirection", e.target.value)
-                  }
-                  placeholder="Optional. Leave empty or click Inspire me."
-                />
-              </label>
-
-              <div className="mf-action-row">
-                <button
-                  className="mf-secondary-button"
-                  type="button"
-                  onClick={generateCreativeDirection}
-                >
-                  Inspire me
-                </button>
-
-                {inputs.creativeDirection.trim().length > 0 && (
+                <div className="mf-action-row">
                   <button
-                    className="mf-mini-button"
+                    className="mf-primary-button"
                     type="button"
-                    onClick={() => updateField("creativeDirection", "")}
+                    onClick={handleForge}
+                    disabled={isGenerating}
                   >
-                    Clear
+                    {isGenerating ? "Forging..." : "Forge output"}
                   </button>
-                )}
-              </div>
-            </div>
 
-            <div className="mf-action-row">
-              <button
-                className="mf-primary-button"
-                type="button"
-                onClick={handleForge}
-                disabled={isGenerating}
-              >
-                {isGenerating ? "Forging..." : "Forge output"}
-              </button>
-
-              <button
-                className="mf-secondary-button"
-                type="button"
-                disabled={!hasGenerated || isGenerating}
-              >
-                Refine lyrics
-              </button>
-
-              <button
-                className="mf-secondary-button"
-                type="button"
-                disabled={!hasGenerated || isGenerating}
-              >
-                Regenerate prompt
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="mf-panel">
-        <div className="mf-panel-inner">
-          <div className="mf-section-label">Output</div>
-
-          <div className="mf-output-block">
-            <div className="mf-output-head">
-              <span className="mf-output-title">Title</span>
-              <button
-                className="mf-mini-button"
-                type="button"
-                onClick={() => navigator.clipboard.writeText(result.title)}
-              >
-                Copy
-              </button>
-            </div>
-            <div className="mf-output-value mf-output-title-value">
-              {result.title}
-            </div>
-          </div>
-
-          {inputs.mode !== "music" && (
-            <div className="mf-output-block">
-              <div className="mf-output-head">
-                <span className="mf-output-title">Lyrics</span>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "8px",
-                    flexWrap: "wrap",
-                  }}
-                >
                   <button
-                    className="mf-mini-button"
+                    className="mf-secondary-button"
                     type="button"
-                    onClick={() => navigator.clipboard.writeText(result.lyrics)}
+                    disabled={!hasGenerated || isGenerating}
                   >
-                    Copy lyrics
+                    Refine lyrics
                   </button>
+
                   <button
-                    className="mf-mini-button"
+                    className="mf-secondary-button"
                     type="button"
-                    onClick={handleSaveFull}
+                    disabled={!hasGenerated || isGenerating}
                   >
-                    Save full
-                  </button>
-                  <button
-                    className="mf-mini-button"
-                    type="button"
-                    onClick={handleSavePdf}
-                  >
-                    Export PDF
+                    Regenerate prompt
                   </button>
                 </div>
               </div>
-
-              <div className="mf-output-scroll">
-                <pre className="mf-output-pre">{result.lyrics}</pre>
-              </div>
             </div>
-          )}
+          </section>
 
-          {inputs.mode !== "lyrics" && (
-            <div className="mf-output-block">
-              <div className="mf-output-head">
-                <span className="mf-output-title">Music prompt</span>
-                <button
-                  className="mf-mini-button"
-                  type="button"
-                  onClick={() =>
-                    navigator.clipboard.writeText(result.musicPrompt)
-                  }
-                >
-                  Copy prompt
-                </button>
+          <section className="mf-panel mf-panel-output">
+            <div className="mf-panel-inner mf-panel-inner-scroll">
+              <div className="mf-section-label">Output</div>
+
+              <div className="mf-output-block">
+                <div className="mf-output-head">
+                  <span className="mf-output-title">Title</span>
+                  <button
+                    className="mf-mini-button"
+                    type="button"
+                    onClick={() => navigator.clipboard.writeText(result.title)}
+                  >
+                    Copy
+                  </button>
+                </div>
+                <div className="mf-output-value mf-output-title-value">
+                  {result.title}
+                </div>
               </div>
 
-              <div className="mf-output-scroll">
-                <pre className="mf-output-pre">{result.musicPrompt}</pre>
-              </div>
+              {inputs.mode !== "music" && (
+                <div className="mf-output-block">
+                  <div className="mf-output-head">
+                    <span className="mf-output-title">Lyrics</span>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "8px",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <button
+                        className="mf-mini-button"
+                        type="button"
+                        onClick={() =>
+                          navigator.clipboard.writeText(result.lyrics)
+                        }
+                      >
+                        Copy lyrics
+                      </button>
+                      <button
+                        className="mf-mini-button"
+                        type="button"
+                        onClick={handleSaveFull}
+                      >
+                        Save full
+                      </button>
+                      <button
+                        className="mf-mini-button"
+                        type="button"
+                        onClick={handleSavePdf}
+                      >
+                        Export PDF
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mf-output-scroll">
+                    <pre className="mf-output-pre">{result.lyrics}</pre>
+                  </div>
+                </div>
+              )}
+
+              {inputs.mode !== "lyrics" && (
+                <div className="mf-output-block">
+                  <div className="mf-output-head">
+                    <span className="mf-output-title">Music prompt</span>
+                    <button
+                      className="mf-mini-button"
+                      type="button"
+                      onClick={() =>
+                        navigator.clipboard.writeText(result.musicPrompt)
+                      }
+                    >
+                      Copy prompt
+                    </button>
+                  </div>
+
+                  <div className="mf-output-scroll">
+                    <pre className="mf-output-pre">{result.musicPrompt}</pre>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </section>
         </div>
-      </section>
+      </div>
     </div>
   );
 }
