@@ -93,7 +93,9 @@ export default function MetalForgePage() {
   };
 
   const handleClear = () => {
-    setTitle(""); setLyrics(""); setMusicPrompt("");
+    setTitle("");
+    setLyrics("");
+    setMusicPrompt("");
     setCreativeDirection("");
   };
 
@@ -110,10 +112,6 @@ export default function MetalForgePage() {
 - Styles: ${selectedStyles.join(", ")}
 - Creative Direction: ${creativeDirection}
 
-Provide:
-1. A powerful song title
-2. Full lyrics following the structure ${structure}
-
 Format your response as:
 TITLE: [song title]
 
@@ -121,7 +119,7 @@ LYRICS:
 [full lyrics with section labels like [Verse 1], [Chorus], etc.]`);
     }
     if (outputMode === "both" || outputMode === "music") {
-      parts.push(`\n\nAlso generate a Suno/Udio music generation prompt (max 200 chars) capturing: ${subgenre}, ${mood} mood, ${intensity} intensity, ${selectedStyles.join(", ")} styles.
+      parts.push(`\n\nAlso generate a Suno/Udio music generation prompt (max 200 chars) for: ${subgenre}, ${mood} mood, ${intensity} intensity, styles: ${selectedStyles.join(", ")}.
 Format: MUSIC PROMPT: [prompt]`);
     }
     return parts.join("");
@@ -151,24 +149,20 @@ Format: MUSIC PROMPT: [prompt]`);
     setIsLoading(true);
     try {
       const text = await callForge(
-        `Refine these metal lyrics to be more powerful, visceral, and poetic while keeping the structure intact. Make the imagery more intense and the chorus more anthemic:\n\n${lyrics}\n\nReturn only the refined lyrics.`
+        `Refine these metal lyrics to be more powerful, visceral, and poetic. Keep the structure. Make imagery more intense, chorus more anthemic:\n\n${lyrics}\n\nReturn only the refined lyrics.`
       );
       setLyrics(text.trim());
-    } catch { /* silent */ } finally {
-      setIsLoading(false);
-    }
+    } catch { /* silent */ } finally { setIsLoading(false); }
   };
 
   const handleRegeneratePrompt = async () => {
     setIsLoading(true);
     try {
       const text = await callForge(
-        `Generate a new Suno/Udio music generation prompt (max 200 chars) for: ${subgenre}, ${mood} mood, ${intensity} intensity, styles: ${selectedStyles.join(", ")}. Return only the prompt text, no labels.`
+        `Generate a Suno/Udio music prompt (max 200 chars) for: ${subgenre}, ${mood} mood, ${intensity} intensity, styles: ${selectedStyles.join(", ")}. Return only the prompt text.`
       );
       setMusicPrompt(text.trim());
-    } catch { /* silent */ } finally {
-      setIsLoading(false);
-    }
+    } catch { /* silent */ } finally { setIsLoading(false); }
   };
 
   const handleSaveFull = () => {
@@ -180,68 +174,88 @@ Format: MUSIC PROMPT: [prompt]`);
     const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `${title || "metal-forge"}.txt`; a.click();
+    a.href = url;
+    a.download = `${title || "metal-forge"}.txt`;
+    a.click();
     URL.revokeObjectURL(url);
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-gray-100 font-mono">
-      <nav className="border-b border-[#2a0a0a] bg-[#0d0d0d] px-6 py-3 flex items-center justify-between sticky top-0 z-50">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-800 to-red-950 flex items-center justify-center text-xs font-black text-red-200 shadow-lg shadow-red-900/50">
+    <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "#e5e5e5", fontFamily: "'Courier New', monospace" }}>
+
+      {/* NAVBAR */}
+      <nav style={{ borderBottom: "1px solid #2a0a0a", background: "#0d0d0d", padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #991b1b, #450a0a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900, color: "#fca5a5" }}>
             MF
           </div>
           <div>
-            <div className="text-sm font-black tracking-widest text-white">METAL FORGE V1</div>
-            <div className="text-[10px] tracking-widest text-red-600/70">HEAVY LYRICS & MUSIC PROMPTS</div>
+            <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.15em", color: "#fff" }}>METAL FORGE V1</div>
+            <div style={{ fontSize: 10, letterSpacing: "0.1em", color: "#7f1d1d" }}>HEAVY LYRICS & MUSIC PROMPTS</div>
           </div>
         </div>
-        <div className="flex gap-2">
-          <button className="px-4 py-1.5 text-xs tracking-widest border border-[#3a1010] text-red-300/70 rounded hover:border-red-700 hover:text-red-300 transition-colors">
-            FORGE STUDIO
-          </button>
-          <button className="px-4 py-1.5 text-xs tracking-widest border border-[#3a1010] text-red-300/70 rounded hover:border-red-700 hover:text-red-300 transition-colors">
-            GITHUB
-          </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          {["FORGE STUDIO", "GITHUB"].map(btn => (
+            <button key={btn} style={{ padding: "6px 16px", fontSize: 11, letterSpacing: "0.12em", border: "1px solid #3a1010", background: "transparent", color: "#fca5a5", borderRadius: 6, cursor: "pointer" }}>
+              {btn}
+            </button>
+          ))}
         </div>
       </nav>
 
-      <div className="grid grid-cols-4 gap-4 p-4 max-w-[1600px] mx-auto">
+      {/* 4 COLUMNS */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16, padding: 16, maxWidth: 1600, margin: "0 auto" }}>
 
-        <div className="bg-[#111111] border border-[#2a1010] rounded-lg p-5 flex flex-col gap-4">
-          <div className="text-[10px] tracking-widest text-red-600/60 uppercase">Control Deck</div>
+        {/* COL 1 — CONTROL DECK */}
+        <div style={{ background: "#111", border: "1px solid #2a1010", borderRadius: 10, padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ fontSize: 10, letterSpacing: "0.15em", color: "#7f1d1d" }}>CONTROL DECK</div>
+
           <div>
-            <h1 className="text-2xl font-black leading-tight text-white">
+            <h1 style={{ fontSize: 26, fontWeight: 900, lineHeight: 1.25, color: "#fff" }}>
               Создайте свой<br />следующий<br />
-              <span className="text-red-600">металлический</span><br />шедевр
+              <span style={{ color: "#dc2626" }}>металлический</span><br />шедевр
             </h1>
-            <p className="text-xs text-gray-500 mt-3 leading-relaxed">
+            <p style={{ fontSize: 11, color: "#6b7280", marginTop: 12, lineHeight: 1.6 }}>
               Настройте субжанр, настроение, структуру и режим вывода. Генерируйте тексты, музыкальные промпты или и то, и другое.
             </p>
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            <span className="px-2 py-0.5 text-[10px] tracking-widest border border-[#3a1010] text-red-500/60 rounded">MODE: LYRICS + MUSIC PROMPT</span>
-            <span className="px-2 py-0.5 text-[10px] tracking-widest border border-[#3a1010] text-red-500/60 rounded">READY FOR LIVE GENERATION</span>
+
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {["MODE: LYRICS + MUSIC PROMPT", "READY FOR LIVE GENERATION"].map(tag => (
+              <span key={tag} style={{ padding: "3px 8px", fontSize: 9, letterSpacing: "0.1em", border: "1px solid #3a1010", color: "#991b1b", borderRadius: 4 }}>{tag}</span>
+            ))}
           </div>
+
           <div>
-            <div className="text-[10px] tracking-widest text-gray-500 mb-2">OUTPUT MODE</div>
-            <div className="flex gap-2">
+            <div style={{ fontSize: 10, letterSpacing: "0.12em", color: "#6b7280", marginBottom: 8 }}>OUTPUT MODE</div>
+            <div style={{ display: "flex", gap: 8 }}>
               {(["both", "lyrics", "music"] as const).map(mode => (
-                <button key={mode} onClick={() => setOutputMode(mode)}
-                  className={`px-3 py-1.5 text-[10px] tracking-widest rounded font-bold transition-all ${outputMode === mode ? "bg-red-800 text-white border border-red-700" : "border border-[#3a1010] text-gray-500 hover:border-red-800/50 hover:text-gray-300"}`}>
+                <button key={mode} onClick={() => setOutputMode(mode)} style={{
+                  padding: "6px 12px", fontSize: 10, letterSpacing: "0.12em", fontWeight: 700, borderRadius: 6, cursor: "pointer", border: "1px solid",
+                  background: outputMode === mode ? "#991b1b" : "transparent",
+                  borderColor: outputMode === mode ? "#dc2626" : "#3a1010",
+                  color: outputMode === mode ? "#fff" : "#6b7280",
+                }}>
                   {mode.toUpperCase()}
                 </button>
               ))}
             </div>
           </div>
-          <div className="flex gap-2 mt-auto pt-2">
-            <button onClick={handleInspire} className="flex-1 py-2 text-[10px] tracking-widest border border-[#3a1010] text-gray-400 rounded hover:border-red-800/50 hover:text-gray-200 transition-colors">INSPIRE ME</button>
-            <button onClick={handleClear} className="flex-1 py-2 text-[10px] tracking-widest border border-[#3a1010] text-gray-400 rounded hover:border-red-800/50 hover:text-gray-200 transition-colors">CLEAR</button>
+
+          <div style={{ marginTop: "auto", display: "flex", gap: 8 }}>
+            <button onClick={handleInspire} style={{ flex: 1, padding: "8px", fontSize: 10, letterSpacing: "0.12em", border: "1px solid #3a1010", background: "transparent", color: "#9ca3af", borderRadius: 6, cursor: "pointer" }}>
+              INSPIRE ME
+            </button>
+            <button onClick={handleClear} style={{ flex: 1, padding: "8px", fontSize: 10, letterSpacing: "0.12em", border: "1px solid #3a1010", background: "transparent", color: "#9ca3af", borderRadius: 6, cursor: "pointer" }}>
+              CLEAR
+            </button>
           </div>
         </div>
 
-        <div className="bg-[#111111] border border-[#2a1010] rounded-lg p-5 flex flex-col gap-4">
-          <div className="text-[10px] tracking-widest text-red-600/60 uppercase">Parameters</div>
+        {/* COL 2 — PARAMETERS */}
+        <div style={{ background: "#111", border: "1px solid #2a1010", borderRadius: 10, padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ fontSize: 10, letterSpacing: "0.15em", color: "#7f1d1d" }}>PARAMETERS</div>
+
           {[
             { label: "SUBGENRE", value: subgenre, setter: setSubgenre, options: SUBGENRES },
             { label: "MOOD", value: mood, setter: setMood, options: MOODS },
@@ -251,120 +265,128 @@ Format: MUSIC PROMPT: [prompt]`);
             { label: "STRUCTURE", value: structure, setter: setStructure, options: STRUCTURES },
           ].map(({ label, value, setter, options }) => (
             <div key={label}>
-              <label className="text-[10px] tracking-widest text-gray-500 block mb-1.5">{label}</label>
-              <select value={value} onChange={e => setter(e.target.value)}
-                className="w-full bg-[#1a0a0a] border border-[#3a1010] text-gray-300 text-xs px-3 py-2 rounded focus:outline-none focus:border-red-800 appearance-none cursor-pointer">
-                {options.map(o => <option key={o}>{o}</option>)}
+              <div style={{ fontSize: 10, letterSpacing: "0.12em", color: "#6b7280", marginBottom: 6 }}>{label}</div>
+              <select value={value} onChange={e => setter(e.target.value)}>
+                {options.map(o => <option key={o} value={o}>{o}</option>)}
               </select>
             </div>
           ))}
         </div>
 
-        <div className="bg-[#111111] border border-[#2a1010] rounded-lg p-5 flex flex-col gap-4">
-          <div className="text-[10px] tracking-widest text-red-600/60 uppercase">Style & Direction</div>
+        {/* COL 3 — STYLE & DIRECTION */}
+        <div style={{ background: "#111", border: "1px solid #2a1010", borderRadius: 10, padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ fontSize: 10, letterSpacing: "0.15em", color: "#7f1d1d" }}>STYLE & DIRECTION</div>
+
           <div>
-            <div className="text-[10px] tracking-widest text-gray-500 mb-2">STYLE PALETTE</div>
-            <button onClick={() => setShowStylePicker(!showStylePicker)}
-              className="w-full py-2 text-xs tracking-widest border border-[#3a1010] text-gray-400 rounded hover:border-red-800/50 transition-colors">
+            <div style={{ fontSize: 10, letterSpacing: "0.12em", color: "#6b7280", marginBottom: 8 }}>STYLE PALETTE</div>
+            <button onClick={() => setShowStylePicker(!showStylePicker)} style={{ width: "100%", padding: "8px", fontSize: 11, letterSpacing: "0.12em", border: "1px solid #3a1010", background: "transparent", color: "#9ca3af", borderRadius: 6, cursor: "pointer" }}>
               BROWSE STYLES ({selectedStyles.length})
             </button>
+
             {showStylePicker && (
-              <div className="mt-2 p-3 bg-[#0d0d0d] border border-[#3a1010] rounded grid grid-cols-2 gap-1.5">
+              <div style={{ marginTop: 8, padding: 12, background: "#0d0d0d", border: "1px solid #2a1010", borderRadius: 6, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                 {STYLE_TAGS.map(tag => (
-                  <button key={tag} onClick={() => toggleStyle(tag)}
-                    className={`px-2 py-1 text-[9px] tracking-widest rounded transition-all ${selectedStyles.includes(tag) ? "bg-red-900/40 border border-red-700/60 text-red-300" : "border border-[#3a1010] text-gray-500 hover:border-red-800/40"}`}>
+                  <button key={tag} onClick={() => toggleStyle(tag)} style={{
+                    padding: "6px 8px", fontSize: 9, letterSpacing: "0.1em", borderRadius: 4, cursor: "pointer", border: "1px solid",
+                    background: selectedStyles.includes(tag) ? "#450a0a" : "transparent",
+                    borderColor: selectedStyles.includes(tag) ? "#991b1b" : "#3a1010",
+                    color: selectedStyles.includes(tag) ? "#fca5a5" : "#6b7280",
+                  }}>
                     {tag}
                   </button>
                 ))}
               </div>
             )}
-            <div className="flex flex-wrap gap-1.5 mt-2">
+
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
               {selectedStyles.map(tag => (
-                <span key={tag} onClick={() => toggleStyle(tag)}
-                  className="px-2 py-0.5 text-[9px] tracking-widest border border-red-800/40 text-red-500/80 rounded cursor-pointer hover:border-red-600 transition-colors">
+                <span key={tag} onClick={() => toggleStyle(tag)} style={{ padding: "3px 8px", fontSize: 9, letterSpacing: "0.1em", border: "1px solid #7f1d1d", color: "#f87171", borderRadius: 4, cursor: "pointer" }}>
                   {tag} ×
                 </span>
               ))}
             </div>
           </div>
-          <div className="flex-1">
-            <div className="text-[10px] tracking-widest text-gray-500 mb-2">CREATIVE DIRECTION</div>
-            <textarea value={creativeDirection} onChange={e => setCreativeDirection(e.target.value)} rows={6}
-              className="w-full bg-[#1a0a0a] border border-[#3a1010] text-gray-300 text-xs px-3 py-2 rounded focus:outline-none focus:border-red-800 resize-none leading-relaxed"
+
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 10, letterSpacing: "0.12em", color: "#6b7280", marginBottom: 8 }}>CREATIVE DIRECTION</div>
+            <textarea value={creativeDirection} onChange={e => setCreativeDirection(e.target.value)} rows={7}
               placeholder="Describe the sound, energy, and feel you want..." />
           </div>
-          <div className="flex flex-col gap-2">
-            <button onClick={handleForge} disabled={isLoading}
-              className="w-full py-3 bg-red-800 hover:bg-red-700 disabled:bg-red-950 disabled:text-red-800 text-white text-xs font-black tracking-widest rounded transition-all shadow-lg shadow-red-900/30">
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <button onClick={handleForge} disabled={isLoading} style={{
+              width: "100%", padding: "12px", fontSize: 12, letterSpacing: "0.15em", fontWeight: 900, border: "none",
+              background: isLoading ? "#450a0a" : "#991b1b", color: isLoading ? "#7f1d1d" : "#fff", borderRadius: 6, cursor: isLoading ? "not-allowed" : "pointer",
+            }}>
               {isLoading ? "FORGING..." : "FORGE OUTPUT"}
             </button>
-            <div className="grid grid-cols-2 gap-2">
-              <button onClick={handleRefine} disabled={isLoading || !lyrics}
-                className="py-2 text-[10px] tracking-widest border border-[#3a1010] text-gray-400 rounded hover:border-red-800/50 hover:text-gray-200 disabled:opacity-30 transition-colors">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <button onClick={handleRefine} disabled={isLoading || !lyrics} style={{ padding: "8px", fontSize: 10, letterSpacing: "0.12em", border: "1px solid #3a1010", background: "transparent", color: "#9ca3af", borderRadius: 6, cursor: "pointer" }}>
                 REFINE LYRICS
               </button>
-              <button onClick={handleRegeneratePrompt} disabled={isLoading}
-                className="py-2 text-[10px] tracking-widest border border-[#3a1010] text-gray-400 rounded hover:border-red-800/50 hover:text-gray-200 disabled:opacity-30 transition-colors">
+              <button onClick={handleRegeneratePrompt} disabled={isLoading} style={{ padding: "8px", fontSize: 10, letterSpacing: "0.12em", border: "1px solid #3a1010", background: "transparent", color: "#9ca3af", borderRadius: 6, cursor: "pointer" }}>
                 REGEN PROMPT
               </button>
             </div>
           </div>
         </div>
 
-        <div className="bg-[#111111] border border-[#2a1010] rounded-lg p-5 flex flex-col gap-4">
-          <div className="text-[10px] tracking-widest text-red-600/60 uppercase">Output</div>
-          <div className="bg-[#0d0d0d] border border-[#2a1010] rounded p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] tracking-widest text-gray-500">TITLE</span>
-              <button onClick={() => handleCopy(title, "title")} disabled={!title}
-                className="text-[10px] tracking-widest text-gray-500 hover:text-red-400 disabled:opacity-30 transition-colors">
+        {/* COL 4 — OUTPUT */}
+        <div style={{ background: "#111", border: "1px solid #2a1010", borderRadius: 10, padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ fontSize: 10, letterSpacing: "0.15em", color: "#7f1d1d" }}>OUTPUT</div>
+
+          {/* Title */}
+          <div style={{ background: "#0d0d0d", border: "1px solid #2a1010", borderRadius: 8, padding: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontSize: 10, letterSpacing: "0.12em", color: "#6b7280" }}>TITLE</span>
+              <button onClick={() => handleCopy(title, "title")} disabled={!title} style={{ fontSize: 10, letterSpacing: "0.1em", background: "transparent", border: "none", color: copiedField === "title" ? "#dc2626" : "#6b7280", cursor: "pointer" }}>
                 {copiedField === "title" ? "COPIED!" : "COPY"}
               </button>
             </div>
-            <div className="text-sm font-black text-white min-h-[20px]">
+            <div style={{ fontSize: 14, fontWeight: 900, color: "#fff", minHeight: 20 }}>
               {isLoading && !title
-                ? <span className="text-red-800 animate-pulse">GENERATING...</span>
-                : title || <span className="text-gray-700 text-xs">Title will appear here</span>}
+                ? <span style={{ color: "#7f1d1d" }}>GENERATING...</span>
+                : title || <span style={{ color: "#374151", fontSize: 11 }}>Title will appear here</span>}
             </div>
           </div>
-          <div className="bg-[#0d0d0d] border border-[#2a1010] rounded p-3 flex-1">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] tracking-widest text-gray-500">LYRICS</span>
-              <div className="flex gap-3">
-                <button onClick={() => handleCopy(lyrics, "lyrics")} disabled={!lyrics}
-                  className="text-[10px] tracking-widest text-gray-500 hover:text-red-400 disabled:opacity-30 transition-colors">
+
+          {/* Lyrics */}
+          <div style={{ background: "#0d0d0d", border: "1px solid #2a1010", borderRadius: 8, padding: 12, flex: 1 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontSize: 10, letterSpacing: "0.12em", color: "#6b7280" }}>LYRICS</span>
+              <div style={{ display: "flex", gap: 12 }}>
+                <button onClick={() => handleCopy(lyrics, "lyrics")} disabled={!lyrics} style={{ fontSize: 10, letterSpacing: "0.1em", background: "transparent", border: "none", color: copiedField === "lyrics" ? "#dc2626" : "#6b7280", cursor: "pointer" }}>
                   {copiedField === "lyrics" ? "COPIED!" : "COPY LYRICS"}
                 </button>
-                <button onClick={handleSaveFull} disabled={!lyrics && !title}
-                  className="text-[10px] tracking-widest text-gray-500 hover:text-red-400 disabled:opacity-30 transition-colors">
+                <button onClick={handleSaveFull} disabled={!lyrics && !title} style={{ fontSize: 10, letterSpacing: "0.1em", background: "transparent", border: "none", color: "#6b7280", cursor: "pointer" }}>
                   SAVE FULL
                 </button>
               </div>
             </div>
-            <div className="text-xs text-gray-300 leading-relaxed whitespace-pre-wrap max-h-[340px] overflow-y-auto min-h-[100px]">
+            <div style={{ fontSize: 12, color: "#d1d5db", lineHeight: 1.7, whiteSpace: "pre-wrap", maxHeight: 320, overflowY: "auto", minHeight: 100 }}>
               {isLoading && !lyrics
-                ? <span className="text-red-800 animate-pulse">Forging lyrics...</span>
-                : lyrics || <span className="text-gray-700">Lyrics will appear here after generation</span>}
+                ? <span style={{ color: "#7f1d1d" }}>Forging lyrics...</span>
+                : lyrics || <span style={{ color: "#374151" }}>Lyrics will appear here after generation</span>}
             </div>
           </div>
-          <div className="bg-[#0d0d0d] border border-[#2a1010] rounded p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] tracking-widest text-gray-500">MUSIC PROMPT</span>
-              <button onClick={() => handleCopy(musicPrompt, "music")} disabled={!musicPrompt}
-                className="text-[10px] tracking-widest text-gray-500 hover:text-red-400 disabled:opacity-30 transition-colors">
+
+          {/* Music Prompt */}
+          <div style={{ background: "#0d0d0d", border: "1px solid #2a1010", borderRadius: 8, padding: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontSize: 10, letterSpacing: "0.12em", color: "#6b7280" }}>MUSIC PROMPT</span>
+              <button onClick={() => handleCopy(musicPrompt, "music")} disabled={!musicPrompt} style={{ fontSize: 10, letterSpacing: "0.1em", background: "transparent", border: "none", color: copiedField === "music" ? "#dc2626" : "#6b7280", cursor: "pointer" }}>
                 {copiedField === "music" ? "COPIED!" : "COPY PROMPT"}
               </button>
             </div>
-            <div className="text-xs text-gray-400 leading-relaxed min-h-[40px]">
+            <div style={{ fontSize: 12, color: "#9ca3af", lineHeight: 1.6, minHeight: 40 }}>
               {isLoading && !musicPrompt && (outputMode === "both" || outputMode === "music")
-                ? <span className="text-red-800 animate-pulse">Generating prompt...</span>
-                : musicPrompt || <span className="text-gray-700">Suno/Udio prompt will appear here</span>}
+                ? <span style={{ color: "#7f1d1d" }}>Generating prompt...</span>
+                : musicPrompt || <span style={{ color: "#374151" }}>Suno/Udio prompt will appear here</span>}
             </div>
           </div>
         </div>
 
       </div>
-      <style jsx global>{`select option { background: #1a0a0a; }`}</style>
     </div>
   );
 }
