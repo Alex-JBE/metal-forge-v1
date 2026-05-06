@@ -1,446 +1,595 @@
-"use client";
+'use client'
 
-import { useState } from "react";
+import { useState } from 'react'
 
-const SUBGENRES = [
-  "Death Metal", "Black Metal", "Thrash Metal", "Doom Metal",
-  "Power Metal", "Heavy Metal", "Groove Metal", "Sludge Metal",
-  "Industrial Metal / Metalcore / Djent", "Progressive Metal",
-  "Nu-Metal", "Speed Metal", "Folk Metal", "Symphonic Metal",
-];
+const GENRE_CATEGORIES = [
+  {
+    id: 'death', label: 'Death Metal', variant: 'indigo' as const,
+    subs: ['Melodic Death', 'Technical Death', 'Brutal Death', 'Death-Doom', 'Deathcore'],
+  },
+  {
+    id: 'black', label: 'Black Metal', variant: 'purple' as const,
+    subs: ['Atmospheric Black', 'Symphonic Black', 'Raw Black', 'Post-Black', 'Blackgaze'],
+  },
+  {
+    id: 'thrash', label: 'Thrash & Speed', variant: 'indigo' as const,
+    subs: ['Bay Area Thrash', 'Speed Metal', 'Crossover Thrash', 'Technical Thrash', 'Heavy Metal'],
+  },
+  {
+    id: 'doom', label: 'Doom & Sludge', variant: 'purple' as const,
+    subs: ['Traditional Doom', 'Sludge Metal', 'Stoner Metal', 'Funeral Doom', 'Death-Doom'],
+  },
+  {
+    id: 'modern', label: 'Modern Heavy', variant: 'indigo' as const,
+    subs: ['Metalcore', 'Djent', 'Deathcore', 'Nu-Metal', 'Groove Metal'],
+  },
+  {
+    id: 'prog', label: 'Progressive', variant: 'purple' as const,
+    subs: ['Progressive Metal', 'Power Metal', 'Symphonic Metal', 'Folk Metal', 'Industrial Metal'],
+  },
+]
+
+const OUTPUT_TYPES: { id: string; label: string }[] = [
+  { id: 'full',       label: 'Full Package' },
+  { id: 'lyrics',     label: 'Lyrics Only' },
+  { id: 'hooks',      label: 'Hooks & Chorus' },
+  { id: 'production', label: 'Production Notes' },
+]
+
+const INSTRUMENTS = [
+  'Vocals', 'Screams', 'Guitar', 'Bass', 'Drums', 'Keys',
+  'Synth', 'Strings', 'Choir', 'Electronics', 'Saxophone', 'Violin',
+]
 
 const MOODS = [
-  "Brooding, violent, triumphant", "Dark and oppressive",
-  "Furious and relentless", "Melancholic and haunting",
-  "Epic and grandiose", "Cold and nihilistic",
-  "Chaotic and frenzied", "Slow and crushing",
-];
+  { icon: '🔥', label: 'Furious' },
+  { icon: '🌑', label: 'Brooding' },
+  { icon: '⚔️', label: 'Triumphant' },
+  { icon: '💀', label: 'Crushing' },
+  { icon: '🌊', label: 'Melancholic' },
+  { icon: '🌩', label: 'Chaotic' },
+  { icon: '🏔', label: 'Epic' },
+  { icon: '❄️', label: 'Cold' },
+]
 
-const THEMES = [
-  "Ash, betrayal, machine ruin", "War and destruction",
-  "Ancient mythology", "Inner demons and madness",
-  "Post-apocalyptic wasteland", "Occult and forbidden knowledge",
-  "Nature's wrath", "Death and rebirth",
-];
+const MOOD_PRESETS = [
+  { icon: '🌑', label: 'Night',      mood: 'Brooding',    tempo: 'Slow (40–60)',   key: 'B minor',  intensity: 2 },
+  { icon: '⚔️', label: 'War',        mood: 'Triumphant',  tempo: 'Fast (160+)',    key: 'E minor',  intensity: 5 },
+  { icon: '🌧', label: 'Doom',       mood: 'Melancholic', tempo: 'Drone (20–40)',  key: 'D minor',  intensity: 1 },
+  { icon: '💀', label: 'Brutal',     mood: 'Crushing',    tempo: 'Fast (160+)',    key: 'C# minor', intensity: 5 },
+  { icon: '🏔', label: 'Epic',       mood: 'Epic',        tempo: 'Mid (90–120)',   key: 'Open',     intensity: 4 },
+  { icon: '❄️', label: 'Nihilist',   mood: 'Cold',        tempo: 'Fast (160+)',    key: 'F# minor', intensity: 5 },
+]
 
-const LANGUAGES = ["English", "Russian", "German", "Norwegian", "Finnish", "Swedish"];
-const INTENSITIES = ["Low", "Medium", "High", "Extreme"];
+const KEYS = [
+  'E minor', 'A minor', 'D minor', 'B minor', 'C# minor',
+  'F# minor', 'G minor', 'C minor', 'F minor', 'Open', 'Drop D', 'Drop B',
+]
+
+const TEMPOS = ['Drone (20–40)', 'Slow (40–60)', 'Mid (90–120)', 'Fast (160+)']
+const INTENSITY_LABELS = ['', 'Soft', 'Heavy', 'Crushing', 'Devastating', 'Annihilating']
+
+const LANGUAGES = [
+  'English', 'Russian', 'German', 'Norwegian', 'Finnish', 'Swedish',
+  'Danish', 'Icelandic', 'Polish', 'Ukrainian', 'Czech', 'French',
+  'Spanish', 'Portuguese', 'Italian', 'Greek', 'Arabic', 'Japanese',
+]
+
+const TRACK_MODES: { id: string; label: string; icon: string }[] = [
+  { id: 'vocal',        label: 'Vocals',       icon: '🎤' },
+  { id: 'instrumental', label: 'Instrumental', icon: '🎸' },
+  { id: 'both',         label: 'Both',         icon: '🎭' },
+]
 
 const STRUCTURES = [
-  "Verse / Chorus / Verse / Bridge",
-  "Intro / Verse / Chorus / Solo / Outro",
-  "Verse / Verse / Chorus / Bridge / Chorus",
-  "Through-composed",
-  "Drone / Build / Explosion",
-];
+  'Verse / Chorus / Verse / Bridge',
+  'Intro / Verse / Chorus / Solo / Outro',
+  'Verse / Verse / Chorus / Bridge / Chorus',
+  'Through-composed',
+  'Drone / Build / Explosion',
+]
 
-const STYLE_TAGS = [
-  "Industrial Metal", "Metalcore", "Cinematic", "Djent", "Death Metal",
-  "Sludge", "Progressive", "Black Metal", "Doom", "Thrash", "Symphonic", "Groove",
-];
-
-const INSPIRE_PROMPTS = [
-  "Write with strong physical imagery, a huge chorus, and modern heavy production energy.",
-  "Dark atmosphere with blast beats, tremolo riffs, and raw screaming vocals.",
-  "Epic orchestral intro building into crushing downtuned riffs and cathartic chorus.",
-  "Slow, oppressive groove with feedback walls and whispered vocals turning to roars.",
-  "Relentless thrash attack — 200bpm verses, gang shout chorus, shredding bridge.",
-];
-
-const OUTPUT_MODES = ["Full Package", "Lyrics Only", "Music Prompt Only"];
-
-async function callForge(prompt: string): Promise<string> {
-  const res = await fetch("/api/forge", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt }),
-  });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error);
-  return data.result || "";
+const s = {
+  col: { display: 'flex' as const, flexDirection: 'column' as const, height: '100%', overflow: 'hidden' as const },
+  sectionLabel: {
+    fontSize: '11px', letterSpacing: '0.12em', color: 'var(--text-muted)',
+    textTransform: 'uppercase' as const, padding: '14px 16px 8px', fontWeight: 500,
+  },
+  outBtn: (active: boolean) => ({
+    fontSize: '12px', padding: '8px 14px', borderRadius: '6px',
+    border: `1px solid ${active ? 'var(--indigo)' : 'transparent'}`,
+    background: active ? 'var(--border-indigo)' : 'transparent',
+    color: active ? 'var(--indigo-light)' : 'var(--text-secondary)',
+    cursor: 'pointer' as const, textAlign: 'left' as const,
+    fontWeight: active ? 500 : 400, transition: 'all 0.15s', width: '100%',
+    fontFamily: "'DM Sans', sans-serif",
+  }),
+  paramCard: {
+    background: 'var(--bg-card)', border: '1px solid var(--border)',
+    borderRadius: '8px', padding: '10px 12px',
+  },
+  paramLabel: {
+    fontSize: '10px', color: 'var(--text-muted)', letterSpacing: '0.1em',
+    textTransform: 'uppercase' as const, marginBottom: '6px', fontWeight: 500,
+  },
+  select: {
+    width: '100%', background: 'transparent', border: 'none',
+    color: 'var(--text-primary)', fontSize: '13px', fontWeight: 500,
+    outline: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+  },
+  tag: (active: boolean, variant: 'indigo' | 'purple' | 'teal') => {
+    const colors = {
+      indigo: { border: 'var(--indigo)',  bg: 'var(--border-indigo)',  color: 'var(--indigo-light)' },
+      purple: { border: 'var(--purple)', bg: 'var(--border-purple)', color: '#ffaaaa' },
+      teal:   { border: '#991b1b',       bg: 'rgba(153,27,27,0.2)',  color: '#fca5a5' },
+    }
+    const c = colors[variant]
+    return {
+      fontSize: '12px', padding: '5px 12px', borderRadius: '20px',
+      border: `1px solid ${active ? c.border : 'var(--border)'}`,
+      background: active ? c.bg : 'var(--bg-card)',
+      color: active ? c.color : 'var(--text-secondary)',
+      cursor: 'pointer' as const, transition: 'all 0.15s',
+      fontWeight: active ? 500 : 400, whiteSpace: 'nowrap' as const,
+      fontFamily: "'DM Sans', sans-serif",
+    }
+  },
 }
 
-const S = {
-  sidebar: {
-    width: 260,
-    background: "#0d0d0d",
-    borderRight: "1px solid #1f0808",
-    display: "flex",
-    flexDirection: "column" as const,
-    flexShrink: 0,
-  },
-  center: {
-    flex: 1,
-    background: "#0f0f0f",
-    borderRight: "1px solid #1f0808",
-    display: "flex",
-    flexDirection: "column" as const,
-    overflow: "hidden",
-  },
-  rightPanel: {
-    width: 340,
-    background: "#0d0d0d",
-    display: "flex",
-    flexDirection: "column" as const,
-    flexShrink: 0,
-  },
-};
+function getVariantForGenre(label: string): 'indigo' | 'purple' {
+  const cat = GENRE_CATEGORIES.find(c => c.subs.includes(label))
+  return cat?.variant === 'indigo' ? 'indigo' : 'purple'
+}
 
-export default function MetalForgePage() {
-  const [outputMode, setOutputMode] = useState("Full Package");
-  const [subgenre, setSubgenre] = useState(SUBGENRES[8]);
-  const [mood, setMood] = useState(MOODS[0]);
-  const [theme, setTheme] = useState("Write your theme or describe the concept...");
-  const [language, setLanguage] = useState("English");
-  const [intensity, setIntensity] = useState("High");
-  const [structure, setStructure] = useState(STRUCTURES[0]);
-  const [selectedStyles, setSelectedStyles] = useState<string[]>(["Industrial Metal", "Metalcore", "Cinematic"]);
-  const [creativeDirection, setCreativeDirection] = useState(INSPIRE_PROMPTS[0]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [title, setTitle] = useState("");
-  const [output, setOutput] = useState("");
-  const [musicPrompt, setMusicPrompt] = useState("");
-  const [history, setHistory] = useState<{ title: string; styles: string; time: string }[]>([]);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
+async function callForge(prompt: string): Promise<string> {
+  const res = await fetch('/api/forge', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt }),
+  })
+  const data = await res.json()
+  if (data.error) throw new Error(data.error)
+  return data.result || ''
+}
 
-  const toggleStyle = (style: string) => {
-    setSelectedStyles(prev =>
-      prev.includes(style) ? prev.filter(s => s !== style) : [...prev, style]
-    );
-  };
+export default function Home() {
+  const [activeGenres, setActiveGenres] = useState<string[]>(['Metalcore'])
+  const [openCat, setOpenCat] = useState<string | null>(null)
+  const [outputType, setOutputType] = useState('full')
+  const [mood, setMood] = useState('Furious')
+  const [tempo, setTempo] = useState('Fast (160+)')
+  const [songKey, setSongKey] = useState('E minor')
+  const [intensity, setIntensity] = useState(4)
+  const [instruments, setInstruments] = useState<string[]>(['Vocals', 'Guitar', 'Drums'])
+  const [language, setLanguage] = useState('English')
+  const [trackMode, setTrackMode] = useState('vocal')
+  const [structure, setStructure] = useState(STRUCTURES[0])
+  const [theme, setTheme] = useState('')
+  const [result, setResult] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [inspireLoading, setInspireLoading] = useState(false)
+  const [copiedField, setCopiedField] = useState<string | null>(null)
+  const [history, setHistory] = useState<{ title: string; genres: string; time: string }[]>([])
 
-  const handleCopy = (text: string, field: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2000);
-  };
+  const songTitle = result.split('\n').find(l => /^#?\s*TITLE:/i.test(l))?.replace(/^#?\s*TITLE:/i, '').trim() || ''
 
-  const handleInspire = () => {
-    const random = INSPIRE_PROMPTS[Math.floor(Math.random() * INSPIRE_PROMPTS.length)];
-    setCreativeDirection(random);
-  };
+  function clearAll() {
+    setResult(''); setTheme('')
+    setActiveGenres(['Metalcore']); setOutputType('full'); setMood('Furious')
+    setTempo('Fast (160+)'); setSongKey('E minor'); setIntensity(4)
+    setInstruments(['Vocals', 'Guitar', 'Drums'])
+    setLanguage('English'); setTrackMode('vocal'); setOpenCat(null)
+  }
 
-  const buildPrompt = () => {
-    if (outputMode === "Music Prompt Only") {
-      return `Generate a Suno/Udio music generation prompt (max 200 chars) for: ${subgenre}, ${mood} mood, ${intensity} intensity, styles: ${selectedStyles.join(", ")}. Return only the prompt text.`;
+  function toggleGenre(g: string) {
+    setActiveGenres(prev => {
+      if (prev.includes(g)) return prev.length > 1 ? prev.filter(x => x !== g) : prev
+      if (prev.length >= 3) return prev
+      return [...prev, g]
+    })
+  }
+
+  function removeGenre(g: string) {
+    setActiveGenres(prev => prev.length > 1 ? prev.filter(x => x !== g) : prev)
+  }
+
+  function isCatActive(cat: typeof GENRE_CATEGORIES[0]) {
+    return activeGenres.includes(cat.label) || cat.subs.some(s => activeGenres.includes(s))
+  }
+
+  function toggleInstrument(i: string) {
+    setInstruments(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])
+  }
+
+  function handleCopy(text: string, field: string) {
+    navigator.clipboard.writeText(text)
+    setCopiedField(field)
+    setTimeout(() => setCopiedField(null), 2000)
+  }
+
+  async function inspire() {
+    setInspireLoading(true); setTheme('')
+    try {
+      const text = await callForge(
+        `Generate a short 1–2 sentence creative direction for a ${activeGenres.join(' + ')} metal song with ${mood} mood, ${tempo} tempo. Make it vivid and visceral. Return only the text, no labels.`
+      )
+      setTheme(text.trim())
+    } catch { setTheme('Ash falls over a ruined city. The last voice screams into silence.') }
+    finally { setInspireLoading(false) }
+  }
+
+  function buildPrompt() {
+    const outMap: Record<string, string> = {
+      full: 'Full Package: title, full lyrics with structure labels, and a Suno/Udio music prompt (max 200 chars) at the end labeled MUSIC PROMPT:',
+      lyrics: 'Full lyrics with structure labels only',
+      hooks: 'Hooks and chorus only — the most memorable lines',
+      production: 'Production notes: tuning, tempo, arrangement, sound design, mix direction',
     }
-    const base = `Generate metal song lyrics with these parameters:
-- Subgenre: ${subgenre}
+    return `Generate ${outMap[outputType]} for a metal song with these parameters:
+- Subgenres: ${activeGenres.join(' + ')}
 - Mood: ${mood}
-- Theme: ${theme}
+- Tempo: ${tempo}
+- Key: ${songKey}
+- Intensity: ${INTENSITY_LABELS[intensity]}
+- Instruments: ${instruments.join(', ')}
 - Language: ${language}
-- Intensity: ${intensity}
+- Track Mode: ${trackMode}
 - Structure: ${structure}
-- Styles: ${selectedStyles.join(", ")}
-- Creative Direction: ${creativeDirection}
+- Theme / Creative Direction: ${theme || 'Open — choose something powerful and visceral'}
 
 Format:
 TITLE: [title]
 
 LYRICS:
-[full lyrics with [Verse 1], [Chorus], etc.]`;
-    if (outputMode === "Full Package") {
-      return base + `\n\nMUSIC PROMPT: [Suno/Udio prompt max 200 chars]`;
-    }
-    return base;
-  };
+[full lyrics with [Verse 1], [Chorus], etc.]
 
-  const handleForge = async () => {
-    setIsLoading(true);
-    setTitle(""); setOutput(""); setMusicPrompt("");
+MUSIC PROMPT: [prompt]`
+  }
+
+  async function generate() {
+    setLoading(true); setResult('')
     try {
-      const text = await callForge(buildPrompt());
-      const titleMatch = text.match(/TITLE:\s*(.+)/);
-      const t = titleMatch ? titleMatch[1].trim() : "";
-      setTitle(t);
-
-      const lyricsMatch = text.match(/LYRICS:\s*([\s\S]*?)(?=MUSIC PROMPT:|$)/);
-      if (lyricsMatch) setOutput(lyricsMatch[1].trim());
-      else if (!titleMatch) setOutput(text.trim());
-
-      const musicMatch = text.match(/MUSIC PROMPT:\s*(.+)/);
-      if (musicMatch) setMusicPrompt(musicMatch[1].trim());
-
+      const text = await callForge(buildPrompt())
+      setResult(text)
+      const t = text.split('\n').find(l => /^#?\s*TITLE:/i.test(l))?.replace(/^#?\s*TITLE:/i, '').trim() || ''
       if (t) {
-        const now = new Date();
-        const time = `${now.toLocaleDateString()} · ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
-        setHistory(prev => [{ title: t, styles: selectedStyles.slice(0, 2).join(" · "), time }, ...prev.slice(0, 9)]);
+        const now = new Date()
+        setHistory(prev => [{ title: t, genres: activeGenres.slice(0, 2).join(' · '), time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }, ...prev.slice(0, 9)])
       }
-    } catch {
-      setOutput("Generation error. Check ANTHROPIC_API_KEY in Vercel environment variables.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      setTheme('')
+    } catch { setResult('Error connecting to API') }
+    finally { setLoading(false) }
+  }
 
-  const handleSave = () => {
-    const content = [title ? `TITLE: ${title}` : "", output ? `\nLYRICS:\n${output}` : "", musicPrompt ? `\nMUSIC PROMPT:\n${musicPrompt}` : ""].filter(Boolean).join("\n");
-    const blob = new Blob([content], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = `${title || "metal-forge"}.txt`; a.click();
-    URL.revokeObjectURL(url);
-  };
+  function handleSave() {
+    const blob = new Blob([result], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `${songTitle || 'metal-forge'}.txt`; a.click()
+    URL.revokeObjectURL(url)
+  }
 
-  const label = (text: string) => (
-    <div style={{ fontSize: 10, letterSpacing: "0.12em", color: "#6b2020", marginBottom: 8, textTransform: "uppercase" as const }}>{text}</div>
-  );
+  const lyrics = (() => {
+    const lm = result.match(/LYRICS:\s*([\s\S]*?)(?=MUSIC PROMPT:|$)/)
+    return lm ? lm[1].trim() : result
+  })()
 
-  const selectStyle: React.CSSProperties = {
-    width: "100%", background: "#161010", border: "1px solid #2a1010",
-    color: "#d1d5db", fontSize: 13, padding: "9px 12px", borderRadius: 8,
-    outline: "none", cursor: "pointer", appearance: "none" as const,
-  };
+  const musicPrompt = (() => {
+    const mm = result.match(/MUSIC PROMPT:\s*(.+)/)
+    return mm ? mm[1].trim() : ''
+  })()
 
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#0a0a0a", fontFamily: "'Courier New', monospace", color: "#e5e5e5", overflow: "hidden" }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
 
-      {/* NAVBAR */}
-      <nav style={{ height: 52, borderBottom: "1px solid #1f0808", background: "#0a0a0a", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, zIndex: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg, #991b1b, #450a0a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 900, color: "#fca5a5" }}>MF</div>
+      {/* HEADER */}
+      <div style={{ height: 52, borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg, #991b1b, #450a0a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 900, color: '#fca5a5' }}>MF</div>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: "0.15em", color: "#fff" }}>METAL FORGE V1</div>
-            <div style={{ fontSize: 9, letterSpacing: "0.1em", color: "#7f1d1d" }}>HEAVY LYRICS & MUSIC PROMPTS</div>
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.15em', color: 'var(--text-primary)' }}>METAL FORGE V1</div>
+            <div style={{ fontSize: 9, letterSpacing: '0.1em', color: 'var(--text-muted)' }}>HEAVY LYRICS & MUSIC PROMPTS</div>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          {["New Track", "Export TXT", "Export PDF", "Docs", "GitHub"].map(btn => (
-            <button key={btn} onClick={btn === "Export TXT" ? handleSave : undefined} style={{
-              padding: "6px 14px", fontSize: 11, letterSpacing: "0.1em", borderRadius: 6, cursor: "pointer",
-              border: btn === "Export PDF" ? "none" : "1px solid #2a1010",
-              background: btn === "Export PDF" ? "#991b1b" : "transparent",
-              color: btn === "Export PDF" ? "#fff" : "#9ca3af",
-              fontFamily: "'Courier New', monospace",
-            }}>{btn}</button>
-          ))}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={clearAll} style={{ padding: '6px 14px', fontSize: 11, letterSpacing: '0.1em', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', borderRadius: 6, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>New Track</button>
+          <button onClick={handleSave} disabled={!result} style={{ padding: '6px 14px', fontSize: 11, letterSpacing: '0.1em', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', borderRadius: 6, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>Export TXT</button>
+          <button onClick={handleSave} disabled={!result} style={{ padding: '6px 14px', fontSize: 11, letterSpacing: '0.1em', border: 'none', background: 'var(--indigo)', color: '#fff', borderRadius: 6, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>Export PDF</button>
+          <button style={{ padding: '6px 14px', fontSize: 11, letterSpacing: '0.1em', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', borderRadius: 6, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>Docs</button>
+          <button style={{ padding: '6px 14px', fontSize: 11, letterSpacing: '0.1em', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', borderRadius: 6, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>GitHub</button>
         </div>
-      </nav>
+      </div>
 
-      {/* MAIN BODY */}
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr 1fr', flex: 1, overflow: 'hidden' }}>
 
-        {/* LEFT SIDEBAR */}
-        <div style={S.sidebar}>
-          <div style={{ padding: "20px 16px", borderBottom: "1px solid #1f0808" }}>
-            <div style={{ fontSize: 10, letterSpacing: "0.12em", color: "#6b2020", marginBottom: 12 }}>COVER ART</div>
-            <div style={{ fontSize: 12, color: "#4b5563" }}>Image Prompts</div>
-            <div style={{ marginTop: 16, background: "#1a0808", border: "1px dashed #3a1010", borderRadius: 8, height: 120, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#4b5563", letterSpacing: "0.1em", textAlign: "center" as const, padding: 12 }}>
+        {/* ══ COL 1 — Cover Art + Output + History ══ */}
+        <div style={{ ...s.col, background: 'var(--bg-secondary)', borderRight: '1px solid var(--border)' }}>
+
+          {/* Cover Art placeholder */}
+          <div style={{ padding: '16px', borderBottom: '1px solid var(--border)' }}>
+            <div style={s.sectionLabel}>Cover Art</div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '0 16px', marginBottom: 10 }}>Image Prompts</div>
+            <div style={{ margin: '0 16px', background: 'var(--bg-card)', border: '1px dashed var(--border)', borderRadius: 8, height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.1em', textAlign: 'center' as const, padding: 12 }}>
               Forge a track first to generate cover art
             </div>
           </div>
 
-          <div style={{ padding: "16px", borderBottom: "1px solid #1f0808" }}>
-            <div style={{ fontSize: 10, letterSpacing: "0.12em", color: "#6b2020", marginBottom: 12 }}>OUTPUT MODE</div>
-            {OUTPUT_MODES.map(mode => (
-              <div key={mode} onClick={() => setOutputMode(mode)} style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "10px 12px", marginBottom: 4, borderRadius: 6, cursor: "pointer",
-                background: outputMode === mode ? "#1f0808" : "transparent",
-                border: outputMode === mode ? "1px solid #7f1d1d" : "1px solid transparent",
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: outputMode === mode ? "#dc2626" : "#374151", border: outputMode === mode ? "none" : "1px solid #374151" }} />
-                  <span style={{ fontSize: 12, color: outputMode === mode ? "#fca5a5" : "#6b7280" }}>{mode}</span>
-                </div>
-              </div>
-            ))}
+          {/* Output type */}
+          <div style={{ padding: '0 12px', borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
+            <div style={s.sectionLabel}>Output</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {OUTPUT_TYPES.map(o => (
+                <button key={o.id} onClick={() => setOutputType(o.id)} style={s.outBtn(outputType === o.id)}>{o.label}</button>
+              ))}
+            </div>
           </div>
 
-          <div style={{ padding: "16px", flex: 1, overflowY: "auto" as const }}>
-            <div style={{ fontSize: 10, letterSpacing: "0.12em", color: "#6b2020", marginBottom: 12 }}>HISTORY</div>
-            {history.length === 0 ? (
-              <div style={{ fontSize: 11, color: "#374151" }}>Forge a track first</div>
-            ) : history.map((item, i) => (
-              <div key={i} style={{ padding: "10px 0", borderBottom: "1px solid #1f0808", cursor: "pointer" }}>
-                <div style={{ fontSize: 12, color: "#d1d5db", marginBottom: 3 }}>{item.title}</div>
-                <div style={{ fontSize: 10, color: "#6b2020" }}>{item.styles} · {item.time}</div>
-              </div>
-            ))}
+          {/* History */}
+          <div style={{ flex: 1, overflow: 'auto', padding: '0 16px' }}>
+            <div style={s.sectionLabel}>History</div>
+            {history.length === 0
+              ? <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Forge a track first</div>
+              : history.map((item, i) => (
+                <div key={i} style={{ padding: '10px 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-primary)', marginBottom: 3 }}>{item.title}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{item.genres} · {item.time}</div>
+                </div>
+              ))
+            }
           </div>
         </div>
 
-        {/* CENTER PANEL */}
-        <div style={S.center}>
-          <div style={{ flex: 1, overflowY: "auto" as const, padding: "32px 40px" }}>
+        {/* ══ COL 2 — Hero + Genre + Inspire ══ */}
+        <div style={{ ...s.col, background: 'var(--bg-secondary)', borderRight: '1px solid var(--border)' }}>
 
-            <h1 style={{ fontSize: 52, fontWeight: 900, lineHeight: 1.1, marginBottom: 8, color: "#fff" }}>
-              Forge your next<br />
-              <span style={{ color: "#dc2626", fontStyle: "italic" }}>metal masterpiece</span>
-            </h1>
-            <p style={{ fontSize: 13, color: "#6b7280", marginBottom: 32 }}>Select subgenre, set parameters, generate.</p>
-
-            {/* SUBGENRE + MOOD row */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-              <div>
-                {label("Subgenre")}
-                <select value={subgenre} onChange={e => setSubgenre(e.target.value)} style={selectStyle}>
-                  {SUBGENRES.map(o => <option key={o}>{o}</option>)}
-                </select>
-              </div>
-              <div>
-                {label("Mood")}
-                <select value={mood} onChange={e => setMood(e.target.value)} style={selectStyle}>
-                  {MOODS.map(o => <option key={o}>{o}</option>)}
-                </select>
-              </div>
+          {/* Hero */}
+          <div style={{ padding: '40px 20px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 52, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.0, letterSpacing: '-0.03em' }}>
+              Forge your next
+              <br />
+              <span style={{ color: 'var(--indigo-light)', fontStyle: 'italic' }}>metal masterpiece</span>
             </div>
-
-            {/* THEME textarea */}
-            <div style={{ marginBottom: 20 }}>
-              {label("Theme")}
-              <textarea value={theme} onChange={e => setTheme(e.target.value)} rows={3}
-                style={{ ...selectStyle, resize: "none" as const, lineHeight: 1.6, fontFamily: "'Courier New', monospace" }}
-                placeholder="Describe your theme or concept..." />
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 12, lineHeight: 1.4 }}>
+              Select subgenre, set parameters, generate.
             </div>
-
-            {/* STYLE TAGS */}
-            <div style={{ marginBottom: 20 }}>
-              {label("Style")}
-              <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 8 }}>
-                {STYLE_TAGS.map(tag => (
-                  <button key={tag} onClick={() => toggleStyle(tag)} style={{
-                    padding: "6px 14px", fontSize: 11, borderRadius: 20, cursor: "pointer", border: "1px solid",
-                    background: selectedStyles.includes(tag) ? "#450a0a" : "transparent",
-                    borderColor: selectedStyles.includes(tag) ? "#dc2626" : "#2a1010",
-                    color: selectedStyles.includes(tag) ? "#fca5a5" : "#6b7280",
-                    fontFamily: "'Courier New', monospace",
-                  }}>{tag}</button>
-                ))}
-              </div>
-              {selectedStyles.length > 0 && (
-                <div style={{ marginTop: 10, fontSize: 11, color: "#7f1d1d" }}>
-                  {selectedStyles.join(" · ")} — {selectedStyles.length} style{selectedStyles.length !== 1 ? "s" : ""} active
-                </div>
-              )}
-            </div>
-
-            {/* LANGUAGE */}
-            <div style={{ marginBottom: 20 }}>
-              {label("Language")}
-              <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 8 }}>
-                {LANGUAGES.map(lang => (
-                  <button key={lang} onClick={() => setLanguage(lang)} style={{
-                    padding: "6px 14px", fontSize: 11, borderRadius: 20, cursor: "pointer", border: "1px solid",
-                    background: language === lang ? "#450a0a" : "transparent",
-                    borderColor: language === lang ? "#dc2626" : "#2a1010",
-                    color: language === lang ? "#fca5a5" : "#6b7280",
-                    fontFamily: "'Courier New', monospace",
-                  }}>{lang}</button>
-                ))}
-              </div>
-            </div>
-
-            {/* INTENSITY + STRUCTURE row */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-              <div>
-                {label("Intensity")}
-                <select value={intensity} onChange={e => setIntensity(e.target.value)} style={selectStyle}>
-                  {INTENSITIES.map(o => <option key={o}>{o}</option>)}
-                </select>
-              </div>
-              <div>
-                {label("Structure")}
-                <select value={structure} onChange={e => setStructure(e.target.value)} style={selectStyle}>
-                  {STRUCTURES.map(o => <option key={o}>{o}</option>)}
-                </select>
-              </div>
-            </div>
-
-            {/* CREATIVE DIRECTION */}
-            <div style={{ marginBottom: 20 }}>
-              {label("Creative Direction")}
-              <textarea value={creativeDirection} onChange={e => setCreativeDirection(e.target.value)} rows={4}
-                style={{ ...selectStyle, resize: "none" as const, lineHeight: 1.6, fontFamily: "'Courier New', monospace" }}
-                placeholder="Describe the sound, energy, and feel you want..." />
-            </div>
-
-          </div>
-
-          {/* BOTTOM ACTION BAR */}
-          <div style={{ borderTop: "1px solid #1f0808", padding: "14px 40px", display: "flex", alignItems: "center", gap: 12, background: "#0a0a0a", flexShrink: 0 }}>
-            <button onClick={handleInspire} style={{ padding: "10px 20px", fontSize: 11, letterSpacing: "0.1em", border: "1px solid #2a1010", background: "transparent", color: "#9ca3af", borderRadius: 8, cursor: "pointer", fontFamily: "'Courier New', monospace" }}>
-              ✦ Inspire Me
-            </button>
-            <div style={{ flex: 1 }} />
-            <button onClick={handleForge} disabled={isLoading} style={{
-              padding: "12px 48px", fontSize: 13, letterSpacing: "0.15em", fontWeight: 900,
-              border: "none", borderRadius: 8, cursor: isLoading ? "not-allowed" : "pointer",
-              background: isLoading ? "#450a0a" : "#dc2626", color: isLoading ? "#7f1d1d" : "#fff",
-              fontFamily: "'Courier New', monospace",
-            }}>
-              {isLoading ? "FORGING..." : "FORGE OUTPUT ↗"}
-            </button>
-          </div>
-        </div>
-
-        {/* RIGHT PANEL */}
-        <div style={S.rightPanel}>
-          <div style={{ flex: 1, overflowY: "auto" as const, padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
-
-            {/* TITLE */}
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <div style={{ fontSize: 10, letterSpacing: "0.12em", color: "#6b2020" }}>TITLE</div>
-                <button onClick={() => handleCopy(title, "title")} disabled={!title} style={{ fontSize: 10, letterSpacing: "0.1em", background: "transparent", border: "none", color: copiedField === "title" ? "#dc2626" : "#4b5563", cursor: "pointer", fontFamily: "'Courier New', monospace" }}>
-                  {copiedField === "title" ? "COPIED!" : "COPY"}
+            <div style={{ display: 'flex', gap: 5, marginTop: 10, flexWrap: 'wrap' as const }}>
+              {MOOD_PRESETS.map(preset => (
+                <button key={preset.label} onClick={() => { setMood(preset.mood); setTempo(preset.tempo); setSongKey(preset.key); setIntensity(preset.intensity) }} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                  {preset.icon} {preset.label}
                 </button>
-              </div>
-              <div style={{ background: "#161010", border: "1px solid #2a1010", borderRadius: 8, padding: 14, minHeight: 48 }}>
-                <div style={{ fontSize: 15, fontWeight: 900, color: "#fff" }}>
-                  {isLoading && !title ? <span style={{ color: "#7f1d1d" }}>Generating...</span> : title || <span style={{ color: "#374151", fontWeight: 400, fontSize: 12 }}>Title will appear here</span>}
-                </div>
-              </div>
+              ))}
             </div>
+            <button onClick={inspire} disabled={inspireLoading} style={{ marginTop: 10, width: '100%', padding: '8px 14px', background: inspireLoading ? 'var(--bg-card)' : 'var(--border-indigo)', border: `1px solid ${inspireLoading ? 'var(--border)' : 'var(--indigo-dim)'}`, borderRadius: 8, color: inspireLoading ? 'var(--text-muted)' : 'var(--indigo-light)', fontSize: 12, fontWeight: 500, cursor: inspireLoading ? 'not-allowed' : 'pointer', letterSpacing: '0.06em', fontFamily: "'DM Sans', sans-serif" }}>
+              {inspireLoading ? 'Generating brief...' : '✦ Inspire Me'}
+            </button>
+          </div>
 
-            {/* OUTPUT / LYRICS */}
-            <div style={{ flex: 1 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <div style={{ fontSize: 10, letterSpacing: "0.12em", color: "#6b2020" }}>COMPOSITION</div>
-                <div style={{ display: "flex", gap: 10 }}>
-                  <button onClick={() => callForge(`Refine these metal lyrics to be more powerful and poetic:\n\n${output}\n\nReturn only the lyrics.`).then(t => setOutput(t.trim()))} disabled={!output || isLoading} style={{ fontSize: 10, letterSpacing: "0.1em", background: "transparent", border: "none", color: "#4b5563", cursor: "pointer", fontFamily: "'Courier New', monospace" }}>Refine</button>
-                  <button onClick={() => handleCopy(output, "output")} disabled={!output} style={{ fontSize: 10, letterSpacing: "0.1em", background: "transparent", border: "none", color: copiedField === "output" ? "#dc2626" : "#4b5563", cursor: "pointer", fontFamily: "'Courier New', monospace" }}>
-                    {copiedField === "output" ? "Copied!" : "Copy"}
-                  </button>
-                </div>
-              </div>
-              <div style={{ background: "#161010", border: "1px solid #2a1010", borderRadius: 8, padding: 14, minHeight: 200, maxHeight: 340, overflowY: "auto" as const }}>
-                <div style={{ fontSize: 12, color: "#d1d5db", lineHeight: 1.8, whiteSpace: "pre-wrap" as const }}>
-                  {isLoading && !output ? <span style={{ color: "#7f1d1d" }}>Forging lyrics...</span> : output || <span style={{ color: "#374151" }}>Your composition will appear here...</span>}
-                </div>
-              </div>
-            </div>
-
-            {/* MUSIC PROMPT */}
-            {(outputMode === "Full Package" || outputMode === "Music Prompt Only") && (
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                  <div style={{ fontSize: 10, letterSpacing: "0.12em", color: "#6b2020" }}>MUSIC PROMPT</div>
-                  <button onClick={() => handleCopy(musicPrompt, "music")} disabled={!musicPrompt} style={{ fontSize: 10, letterSpacing: "0.1em", background: "transparent", border: "none", color: copiedField === "music" ? "#dc2626" : "#4b5563", cursor: "pointer", fontFamily: "'Courier New', monospace" }}>
-                    {copiedField === "music" ? "Copied!" : "Copy"}
-                  </button>
-                </div>
-                <div style={{ background: "#161010", border: "1px solid #2a1010", borderRadius: 8, padding: 14, minHeight: 60 }}>
-                  <div style={{ fontSize: 12, color: "#9ca3af", lineHeight: 1.6 }}>
-                    {isLoading && !musicPrompt ? <span style={{ color: "#7f1d1d" }}>Generating prompt...</span> : musicPrompt || <span style={{ color: "#374151" }}>Suno/Udio prompt will appear here</span>}
+          {/* Genre */}
+          <div style={{ flex: 1, overflow: 'auto' }}>
+            <div style={s.sectionLabel}>Subgenre</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5, padding: '0 12px' }}>
+              {GENRE_CATEGORIES.map(cat => {
+                const active = isCatActive(cat)
+                const isOpen = openCat === cat.id
+                const v = cat.variant
+                return (
+                  <div key={cat.id} style={{ position: 'relative' }}>
+                    <div style={{ display: 'flex', borderRadius: 20, border: `1px solid ${active ? (v === 'indigo' ? 'var(--indigo)' : 'var(--purple)') : 'var(--border)'}`, background: active ? (v === 'indigo' ? 'var(--border-indigo)' : 'var(--border-purple)') : 'var(--bg-card)', overflow: 'hidden', transition: 'all 0.15s' }}>
+                      <button onClick={() => { toggleGenre(cat.subs[0]); setOpenCat(null) }} style={{ flex: 1, fontSize: 12, padding: '6px 4px 6px 10px', background: 'transparent', border: 'none', color: active ? (v === 'indigo' ? 'var(--indigo-light)' : '#ffaaaa') : 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left' as const, fontWeight: active ? 500 : 400, fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {cat.label}
+                      </button>
+                      <button onClick={() => setOpenCat(isOpen ? null : cat.id)} style={{ width: 22, background: 'transparent', border: 'none', borderLeft: `1px solid ${active ? (v === 'indigo' ? 'var(--indigo-dim)' : 'var(--purple-dim)') : 'var(--border)'}`, color: active ? (v === 'indigo' ? 'var(--indigo-light)' : '#ffaaaa') : 'var(--text-muted)', cursor: 'pointer', fontSize: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}>▾</button>
+                    </div>
+                    {isOpen && (
+                      <div style={{ position: 'absolute', top: 'calc(100% + 3px)', left: 0, right: 0, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, zIndex: 50, overflow: 'hidden' }}>
+                        {cat.subs.map((sub, idx) => {
+                          const subActive = activeGenres.includes(sub)
+                          return (
+                            <button key={sub} onClick={() => toggleGenre(sub)} style={{ display: 'block', width: '100%', textAlign: 'left' as const, padding: '7px 12px', background: subActive ? (v === 'indigo' ? 'var(--border-indigo)' : 'var(--border-purple)') : 'transparent', border: 'none', borderBottom: idx < cat.subs.length - 1 ? '1px solid var(--border)' : 'none', color: subActive ? (v === 'indigo' ? 'var(--indigo-light)' : '#ffaaaa') : 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                              {sub}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
+                )
+              })}
+            </div>
+
+            <div style={{ padding: '8px 12px 0', display: 'flex', flexWrap: 'wrap' as const, gap: 5 }}>
+              {activeGenres.map(g => {
+                const v = getVariantForGenre(g)
+                return (
+                  <div key={g} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, padding: '3px 8px 3px 10px', borderRadius: 20, border: `1px solid ${v === 'indigo' ? 'var(--indigo)' : 'var(--purple)'}`, background: v === 'indigo' ? 'var(--border-indigo)' : 'var(--border-purple)', color: v === 'indigo' ? 'var(--indigo-light)' : '#ffaaaa' }}>
+                    <span>{g}</span>
+                    <button onClick={() => removeGenre(g)} style={{ background: 'none', border: 'none', color: v === 'indigo' ? 'var(--indigo)' : 'var(--purple)', cursor: 'pointer', fontSize: 12, lineHeight: 1, padding: '0 0 0 2px' }}>×</button>
+                  </div>
+                )
+              })}
+            </div>
+
+            {activeGenres.length >= 2 && (
+              <div style={{ margin: '6px 12px 0', padding: '7px 10px', background: 'var(--border-purple)', border: '1px solid var(--purple-dim)', borderRadius: 6, fontSize: 11, color: '#ffaaaa' }}>
+                Blend mode — {activeGenres.length} subgenres active
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ══ COL 3 — Params + Result ══ */}
+        <div style={{ ...s.col, background: 'var(--bg-primary)' }}>
+
+          <div style={{ padding: 16, borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0 }}>
+
+            {/* Key + Tempo + Intensity */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+              <div style={s.paramCard}>
+                <div style={s.paramLabel}>Key</div>
+                <select style={s.select} value={songKey} onChange={e => setSongKey(e.target.value)}>
+                  {KEYS.map(k => <option key={k} style={{ background: '#131010' }}>{k}</option>)}
+                </select>
+              </div>
+              <div style={s.paramCard}>
+                <div style={s.paramLabel}>Tempo</div>
+                <select style={s.select} value={tempo} onChange={e => setTempo(e.target.value)}>
+                  {TEMPOS.map(t => <option key={t} style={{ background: '#131010' }}>{t}</option>)}
+                </select>
+              </div>
+              <div style={s.paramCard}>
+                <div style={s.paramLabel}>Intensity</div>
+                <div style={{ display: 'flex', gap: 3, marginTop: 4 }}>
+                  {[1,2,3,4,5].map(n => (
+                    <button key={n} onClick={() => setIntensity(n)} style={{ height: 6, flex: 1, borderRadius: 2, border: 'none', background: n <= intensity ? 'var(--indigo)' : 'var(--border)', cursor: 'pointer' }} />
+                  ))}
                 </div>
+                <div style={{ fontSize: 11, color: 'var(--indigo-light)', marginTop: 5 }}>{INTENSITY_LABELS[intensity]}</div>
+              </div>
+            </div>
+
+            {/* Mood */}
+            <div>
+              <div style={s.paramLabel}>Mood</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 5 }}>
+                {MOODS.map(m => (
+                  <button key={m.label} onClick={() => setMood(m.label)} style={s.tag(mood === m.label, 'indigo')}>{m.icon} {m.label}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Theme */}
+            <div>
+              <div style={s.paramLabel}>Theme / Creative Direction</div>
+              <textarea value={theme} onChange={e => setTheme(e.target.value)}
+                placeholder="Ash falls over a ruined city. The last voice screams into silence..."
+                style={{ width: '100%', height: 90, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text-secondary)', fontSize: 12, resize: 'none', outline: 'none', fontFamily: "'DM Mono', monospace", lineHeight: 1.7, boxSizing: 'border-box' as const }}
+              />
+            </div>
+
+            {/* Instrumentation */}
+            <div>
+              <div style={s.paramLabel}>Instrumentation</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 5 }}>
+                {INSTRUMENTS.map(i => (
+                  <button key={i} onClick={() => toggleInstrument(i)} style={s.tag(instruments.includes(i), 'teal')}>{i}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Language */}
+            <div>
+              <div style={s.paramLabel}>Language</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 5 }}>
+                {LANGUAGES.map(l => (
+                  <button key={l} onClick={() => setLanguage(l)} style={s.tag(language === l, 'purple')}>{l}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Structure + Mode */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={s.paramCard}>
+                <div style={s.paramLabel}>Structure</div>
+                <select style={s.select} value={structure} onChange={e => setStructure(e.target.value)}>
+                  {STRUCTURES.map(t => <option key={t} style={{ background: '#131010' }}>{t}</option>)}
+                </select>
+              </div>
+              <div style={s.paramCard}>
+                <div style={s.paramLabel}>Mode</div>
+                <div style={{ display: 'flex', gap: 4, marginTop: 2 }}>
+                  {TRACK_MODES.map(m => (
+                    <button key={m.id} onClick={() => setTrackMode(m.id)} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 20, border: `1px solid ${trackMode === m.id ? 'var(--indigo)' : 'var(--border)'}`, background: trackMode === m.id ? 'var(--border-indigo)' : 'transparent', color: trackMode === m.id ? 'var(--indigo-light)' : 'var(--text-secondary)', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>{m.icon} {m.label}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Result */}
+          <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
+            {!result && !loading && (
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 20 }}>Your composition will appear here...</div>
+            )}
+            {loading && (
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 20 }}>Forging your metal track...</div>
+            )}
+            {result && (
+              <div>
+                {songTitle && <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 16, fontFamily: "'Playfair Display', serif" }}>{songTitle}</div>}
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8, whiteSpace: 'pre-wrap', fontFamily: "'DM Mono', monospace" }}>{lyrics}</div>
+                {musicPrompt && (
+                  <div style={{ marginTop: 20, padding: 12, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8 }}>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: 6 }}>MUSIC PROMPT</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{musicPrompt}</div>
+                    <button onClick={() => handleCopy(musicPrompt, 'music')} style={{ marginTop: 8, fontSize: 11, background: 'transparent', border: '1px solid var(--border)', borderRadius: 4, color: copiedField === 'music' ? 'var(--indigo-light)' : 'var(--text-muted)', cursor: 'pointer', padding: '3px 8px', fontFamily: "'DM Sans', sans-serif" }}>
+                      {copiedField === 'music' ? 'Copied!' : 'Copy Prompt'}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
 
-          {/* RIGHT BOTTOM */}
-          <div style={{ borderTop: "1px solid #1f0808", padding: "14px 20px", display: "flex", gap: 8, flexShrink: 0 }}>
-            <button onClick={handleSave} disabled={!output && !title} style={{ flex: 1, padding: "10px", fontSize: 10, letterSpacing: "0.1em", border: "1px solid #2a1010", background: "transparent", color: "#9ca3af", borderRadius: 6, cursor: "pointer", fontFamily: "'Courier New', monospace" }}>
-              Download TXT
+          {/* Bottom bar */}
+          <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button onClick={handleSave} disabled={!result} style={{ padding: '10px 16px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: result ? 'var(--text-secondary)' : 'var(--text-muted)', fontSize: 12, cursor: result ? 'pointer' : 'not-allowed', letterSpacing: '0.04em', fontFamily: "'DM Sans', sans-serif" }}>
+              Save Draft
             </button>
-            <button onClick={handleForge} disabled={isLoading} style={{ flex: 1, padding: "10px", fontSize: 10, letterSpacing: "0.1em", border: "none", background: "#991b1b", color: "#fff", borderRadius: 6, cursor: "pointer", fontFamily: "'Courier New', monospace" }}>
-              Download PDF
+            <button onClick={generate} disabled={loading} style={{ flex: 1, padding: 10, background: loading ? 'var(--bg-card)' : 'var(--indigo)', border: 'none', borderRadius: 6, color: loading ? 'var(--text-muted)' : '#fff', fontSize: 13, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', letterSpacing: '0.04em', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.2s' }}>
+              {loading ? 'Forging...' : 'Forge Track ↗'}
             </button>
+          </div>
+        </div>
+
+        {/* ══ COL 4 — Right Panel ══ */}
+        <div style={{ ...s.col, background: 'var(--bg-secondary)', borderLeft: '1px solid var(--border)' }}>
+          <div style={{ padding: '16px', borderBottom: '1px solid var(--border)' }}>
+            <div style={s.sectionLabel}>Title</div>
+            <div style={{ padding: '0 16px', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', minHeight: 24, fontFamily: "'Playfair Display', serif" }}>
+              {loading ? <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: 12 }}>Generating...</span> : songTitle || <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: 12 }}>Title will appear here</span>}
+            </div>
+            {songTitle && (
+              <button onClick={() => handleCopy(songTitle, 'title')} style={{ margin: '8px 16px 0', fontSize: 11, background: 'transparent', border: '1px solid var(--border)', borderRadius: 4, color: copiedField === 'title' ? 'var(--indigo-light)' : 'var(--text-muted)', cursor: 'pointer', padding: '3px 8px', fontFamily: "'DM Sans', sans-serif" }}>
+                {copiedField === 'title' ? 'Copied!' : 'Copy Title'}
+              </button>
+            )}
+          </div>
+
+          <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
+            <div style={s.sectionLabel}>Video Script</div>
+            <div style={{ padding: '0 16px' }}>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>Scene Prompts</div>
+              <div style={{ background: 'var(--bg-card)', border: '1px dashed var(--border)', borderRadius: 8, padding: 16, fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.6, minHeight: 80 }}>
+                {result ? 'Ready to generate video script — click below.' : 'Forge a track first, then generate a video script.'}
+              </div>
+              {result && (
+                <button onClick={async () => {
+                  try {
+                    const text = await callForge(`Generate 3 short cinematic scene descriptions for a music video for this metal track. Each scene max 2 sentences. Format as Scene 1:, Scene 2:, Scene 3:\n\nTitle: ${songTitle}\n\nLyrics excerpt:\n${lyrics.slice(0, 400)}`)
+                    alert(text)
+                  } catch { /* silent */ }
+                }} style={{ marginTop: 10, width: '100%', padding: '8px', fontSize: 11, letterSpacing: '0.1em', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', borderRadius: 6, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                  Generate Video Script ↗
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+            <div style={s.sectionLabel}>Track Duration</div>
+            <div style={{ padding: '0 16px 12px', fontSize: 13, color: 'var(--text-secondary)' }}>3:30</div>
+            <div style={{ padding: '0 16px' }}>
+              <div style={s.paramLabel}>Clip Length</div>
+              <div style={{ display: 'flex', gap: 4 }}>
+                {['5s', '8s', '10s', '15s'].map(d => (
+                  <button key={d} style={{ flex: 1, padding: '5px 0', fontSize: 10, border: d === '10s' ? '1px solid var(--indigo)' : '1px solid var(--border)', background: d === '10s' ? 'var(--border-indigo)' : 'transparent', color: d === '10s' ? 'var(--indigo-light)' : 'var(--text-muted)', borderRadius: 4, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>{d}</button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
       </div>
     </div>
-  );
+  )
 }
