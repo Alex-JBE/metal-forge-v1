@@ -53,12 +53,12 @@ const MOODS = [
 ]
 
 const MOOD_PRESETS = [
-  { icon: '🌑', label: 'Night',      mood: 'Brooding',    tempo: 'Slow (40–60)',   key: 'B minor',  intensity: 2 },
-  { icon: '⚔️', label: 'War',        mood: 'Triumphant',  tempo: 'Fast (160+)',    key: 'E minor',  intensity: 5 },
-  { icon: '🌧', label: 'Doom',       mood: 'Melancholic', tempo: 'Drone (20–40)',  key: 'D minor',  intensity: 1 },
-  { icon: '💀', label: 'Brutal',     mood: 'Crushing',    tempo: 'Fast (160+)',    key: 'C# minor', intensity: 5 },
-  { icon: '🏔', label: 'Epic',       mood: 'Epic',        tempo: 'Mid (90–120)',   key: 'Open',     intensity: 4 },
-  { icon: '❄️', label: 'Nihilist',   mood: 'Cold',        tempo: 'Fast (160+)',    key: 'F# minor', intensity: 5 },
+  { icon: '🌑', label: 'Night',    mood: 'Brooding',   tempo: 'Slow (40–60)',  key: 'B minor',  intensity: 2 },
+  { icon: '⚔️', label: 'War',      mood: 'Triumphant', tempo: 'Fast (160+)',   key: 'E minor',  intensity: 5 },
+  { icon: '🌧', label: 'Doom',     mood: 'Melancholic',tempo: 'Drone (20–40)', key: 'D minor',  intensity: 1 },
+  { icon: '💀', label: 'Brutal',   mood: 'Crushing',   tempo: 'Fast (160+)',   key: 'C# minor', intensity: 5 },
+  { icon: '🏔', label: 'Epic',     mood: 'Epic',       tempo: 'Mid (90–120)',  key: 'Open',     intensity: 4 },
+  { icon: '❄️', label: 'Nihilist', mood: 'Cold',       tempo: 'Fast (160+)',   key: 'F# minor', intensity: 5 },
 ]
 
 const KEYS = [
@@ -75,7 +75,7 @@ const LANGUAGES = [
   'Spanish', 'Portuguese', 'Italian', 'Greek', 'Arabic', 'Japanese',
 ]
 
-const TRACK_MODES: { id: string; label: string; icon: string }[] = [
+const TRACK_MODES = [
   { id: 'vocal',        label: 'Vocals',       icon: '🎤' },
   { id: 'instrumental', label: 'Instrumental', icon: '🎸' },
   { id: 'both',         label: 'Both',         icon: '🎭' },
@@ -173,6 +173,16 @@ export default function Home() {
 
   const songTitle = result.split('\n').find(l => /^#?\s*TITLE:/i.test(l))?.replace(/^#?\s*TITLE:/i, '').trim() || ''
 
+  const lyrics = (() => {
+    const lm = result.match(/LYRICS:\s*([\s\S]*?)(?=MUSIC PROMPT:|$)/)
+    return lm ? lm[1].trim() : result
+  })()
+
+  const musicPrompt = (() => {
+    const mm = result.match(/MUSIC PROMPT:\s*(.+)/)
+    return mm ? mm[1].trim() : ''
+  })()
+
   function clearAll() {
     setResult(''); setTheme('')
     setActiveGenres(['Metalcore']); setOutputType('full'); setMood('Furious')
@@ -194,7 +204,7 @@ export default function Home() {
   }
 
   function isCatActive(cat: typeof GENRE_CATEGORIES[0]) {
-    return activeGenres.includes(cat.label) || cat.subs.some(s => activeGenres.includes(s))
+    return activeGenres.includes(cat.label) || cat.subs.some(sub => activeGenres.includes(sub))
   }
 
   function toggleInstrument(i: string) {
@@ -269,16 +279,6 @@ MUSIC PROMPT: [prompt]`
     URL.revokeObjectURL(url)
   }
 
-  const lyrics = (() => {
-    const lm = result.match(/LYRICS:\s*([\s\S]*?)(?=MUSIC PROMPT:|$)/)
-    return lm ? lm[1].trim() : result
-  })()
-
-  const musicPrompt = (() => {
-    const mm = result.match(/MUSIC PROMPT:\s*(.+)/)
-    return mm ? mm[1].trim() : ''
-  })()
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
 
@@ -292,54 +292,26 @@ MUSIC PROMPT: [prompt]`
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={clearAll} style={{ padding: '6px 14px', fontSize: 11, letterSpacing: '0.1em', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', borderRadius: 6, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>New Track</button>
-          <button onClick={handleSave} disabled={!result} style={{ padding: '6px 14px', fontSize: 11, letterSpacing: '0.1em', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', borderRadius: 6, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>Export TXT</button>
-          <button onClick={handleSave} disabled={!result} style={{ padding: '6px 14px', fontSize: 11, letterSpacing: '0.1em', border: 'none', background: 'var(--indigo)', color: '#fff', borderRadius: 6, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>Export PDF</button>
-          <button style={{ padding: '6px 14px', fontSize: 11, letterSpacing: '0.1em', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', borderRadius: 6, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>Docs</button>
-          <button style={{ padding: '6px 14px', fontSize: 11, letterSpacing: '0.1em', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', borderRadius: 6, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>GitHub</button>
+          {['New Track', 'Export TXT', 'Export PDF', 'Docs', 'GitHub'].map(btn => (
+            <button key={btn} onClick={btn === 'Export TXT' || btn === 'Export PDF' ? handleSave : btn === 'New Track' ? clearAll : undefined} style={{ padding: '6px 14px', fontSize: 11, letterSpacing: '0.1em', border: btn === 'Export PDF' ? 'none' : '1px solid var(--border)', background: btn === 'Export PDF' ? 'var(--indigo)' : 'transparent', color: btn === 'Export PDF' ? '#fff' : 'var(--text-secondary)', borderRadius: 6, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>{btn}</button>
+          ))}
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr 1fr', flex: 1, overflow: 'hidden' }}>
 
-        {/* ══ COL 1 — Cover Art + Output + History ══ */}
+        {/* ══ COL 1 — Cover Art only ══ */}
         <div style={{ ...s.col, background: 'var(--bg-secondary)', borderRight: '1px solid var(--border)' }}>
-
-          {/* Cover Art placeholder */}
-          <div style={{ padding: '16px', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ padding: '16px' }}>
             <div style={s.sectionLabel}>Cover Art</div>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '0 16px', marginBottom: 10 }}>Image Prompts</div>
-            <div style={{ margin: '0 16px', background: 'var(--bg-card)', border: '1px dashed var(--border)', borderRadius: 8, height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.1em', textAlign: 'center' as const, padding: 12 }}>
+            <div style={{ margin: '0 16px', background: 'var(--bg-card)', border: '1px dashed var(--border)', borderRadius: 8, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.1em', textAlign: 'center' as const, padding: 12 }}>
               Forge a track first to generate cover art
             </div>
           </div>
-
-          {/* Output type */}
-          <div style={{ padding: '0 12px', borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
-            <div style={s.sectionLabel}>Output</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {OUTPUT_TYPES.map(o => (
-                <button key={o.id} onClick={() => setOutputType(o.id)} style={s.outBtn(outputType === o.id)}>{o.label}</button>
-              ))}
-            </div>
-          </div>
-
-          {/* History */}
-          <div style={{ flex: 1, overflow: 'auto', padding: '0 16px' }}>
-            <div style={s.sectionLabel}>History</div>
-            {history.length === 0
-              ? <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Forge a track first</div>
-              : history.map((item, i) => (
-                <div key={i} style={{ padding: '10px 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
-                  <div style={{ fontSize: 12, color: 'var(--text-primary)', marginBottom: 3 }}>{item.title}</div>
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{item.genres} · {item.time}</div>
-                </div>
-              ))
-            }
-          </div>
         </div>
 
-        {/* ══ COL 2 — Hero + Genre + Inspire ══ */}
+        {/* ══ COL 2 — Hero + Genre + Output + History ══ */}
         <div style={{ ...s.col, background: 'var(--bg-secondary)', borderRight: '1px solid var(--border)' }}>
 
           {/* Hero */}
@@ -364,8 +336,10 @@ MUSIC PROMPT: [prompt]`
             </button>
           </div>
 
-          {/* Genre */}
-          <div style={{ flex: 1, overflow: 'auto' }}>
+          {/* Scrollable: Genre + Output + History */}
+          <div style={{ flex: 1, overflowY: 'auto' as const }}>
+
+            {/* Genre */}
             <div style={s.sectionLabel}>Subgenre</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5, padding: '0 12px' }}>
               {GENRE_CATEGORIES.map(cat => {
@@ -414,6 +388,32 @@ MUSIC PROMPT: [prompt]`
                 Blend mode — {activeGenres.length} subgenres active
               </div>
             )}
+
+            <div style={{ height: 1, background: 'var(--border)', margin: '12px 0' }} />
+
+            {/* Output */}
+            <div style={s.sectionLabel}>Output</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '0 12px' }}>
+              {OUTPUT_TYPES.map(o => (
+                <button key={o.id} onClick={() => setOutputType(o.id)} style={s.outBtn(outputType === o.id)}>{o.label}</button>
+              ))}
+            </div>
+
+            <div style={{ height: 1, background: 'var(--border)', margin: '12px 0' }} />
+
+            {/* History */}
+            <div style={s.sectionLabel}>History</div>
+            <div style={{ padding: '0 16px 16px' }}>
+              {history.length === 0
+                ? <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Forge a track first</div>
+                : history.map((item, i) => (
+                  <div key={i} style={{ padding: '10px 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-primary)', marginBottom: 3 }}>{item.title}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{item.genres} · {item.time}</div>
+                  </div>
+                ))
+              }
+            </div>
           </div>
         </div>
 
@@ -422,7 +422,6 @@ MUSIC PROMPT: [prompt]`
 
           <div style={{ padding: 16, borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0 }}>
 
-            {/* Key + Tempo + Intensity */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
               <div style={s.paramCard}>
                 <div style={s.paramLabel}>Key</div>
@@ -447,7 +446,6 @@ MUSIC PROMPT: [prompt]`
               </div>
             </div>
 
-            {/* Mood */}
             <div>
               <div style={s.paramLabel}>Mood</div>
               <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 5 }}>
@@ -457,7 +455,6 @@ MUSIC PROMPT: [prompt]`
               </div>
             </div>
 
-            {/* Theme */}
             <div>
               <div style={s.paramLabel}>Theme / Creative Direction</div>
               <textarea value={theme} onChange={e => setTheme(e.target.value)}
@@ -466,7 +463,6 @@ MUSIC PROMPT: [prompt]`
               />
             </div>
 
-            {/* Instrumentation */}
             <div>
               <div style={s.paramLabel}>Instrumentation</div>
               <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 5 }}>
@@ -476,7 +472,6 @@ MUSIC PROMPT: [prompt]`
               </div>
             </div>
 
-            {/* Language */}
             <div>
               <div style={s.paramLabel}>Language</div>
               <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 5 }}>
@@ -486,7 +481,6 @@ MUSIC PROMPT: [prompt]`
               </div>
             </div>
 
-            {/* Structure + Mode */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div style={s.paramCard}>
                 <div style={s.paramLabel}>Structure</div>
@@ -505,14 +499,9 @@ MUSIC PROMPT: [prompt]`
             </div>
           </div>
 
-          {/* Result */}
           <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
-            {!result && !loading && (
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 20 }}>Your composition will appear here...</div>
-            )}
-            {loading && (
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 20 }}>Forging your metal track...</div>
-            )}
+            {!result && !loading && <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 20 }}>Your composition will appear here...</div>}
+            {loading && <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 20 }}>Forging your metal track...</div>}
             {result && (
               <div>
                 {songTitle && <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 16, fontFamily: "'Playfair Display', serif" }}>{songTitle}</div>}
@@ -530,7 +519,6 @@ MUSIC PROMPT: [prompt]`
             )}
           </div>
 
-          {/* Bottom bar */}
           <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8, flexShrink: 0 }}>
             <button onClick={handleSave} disabled={!result} style={{ padding: '10px 16px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: result ? 'var(--text-secondary)' : 'var(--text-muted)', fontSize: 12, cursor: result ? 'pointer' : 'not-allowed', letterSpacing: '0.04em', fontFamily: "'DM Sans', sans-serif" }}>
               Save Draft
@@ -563,12 +551,7 @@ MUSIC PROMPT: [prompt]`
                 {result ? 'Ready to generate video script — click below.' : 'Forge a track first, then generate a video script.'}
               </div>
               {result && (
-                <button onClick={async () => {
-                  try {
-                    const text = await callForge(`Generate 3 short cinematic scene descriptions for a music video for this metal track. Each scene max 2 sentences. Format as Scene 1:, Scene 2:, Scene 3:\n\nTitle: ${songTitle}\n\nLyrics excerpt:\n${lyrics.slice(0, 400)}`)
-                    alert(text)
-                  } catch { /* silent */ }
-                }} style={{ marginTop: 10, width: '100%', padding: '8px', fontSize: 11, letterSpacing: '0.1em', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', borderRadius: 6, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                <button style={{ marginTop: 10, width: '100%', padding: '8px', fontSize: 11, letterSpacing: '0.1em', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', borderRadius: 6, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
                   Generate Video Script ↗
                 </button>
               )}
