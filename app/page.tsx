@@ -141,17 +141,6 @@ function getVariantForGenre(label: string): 'indigo' | 'purple' {
   return cat?.variant === 'indigo' ? 'indigo' : 'purple'
 }
 
-async function callForge(prompt: string): Promise<string> {
-  const res = await fetch('/api/forge', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt }),
-  })
-  const data = await res.json()
-  if (data.error) throw new Error(data.error)
-  return data.result || ''
-}
-
 export default function Home() {
   const [activeGenres, setActiveGenres] = useState<string[]>(['Metalcore'])
   const [openCat, setOpenCat] = useState<string | null>(null)
@@ -166,6 +155,7 @@ export default function Home() {
   const [structure, setStructure] = useState(STRUCTURES[0])
   const [theme, setTheme] = useState('')
   const [result, setResult] = useState('')
+  const [isStreaming, setIsStreaming] = useState(false)
   const [loading, setLoading] = useState(false)
   const [inspireLoading, setInspireLoading] = useState(false)
   const [randomLoading, setRandomLoading] = useState(false)
@@ -221,10 +211,20 @@ export default function Home() {
   async function inspire() {
     setInspireLoading(true); setTheme('')
     try {
-      const text = await callForge(
-        `Generate a short 1–2 sentence creative direction for a ${activeGenres.join(' + ')} metal song with ${mood} mood, ${tempo} tempo. Make it vivid and visceral. Return only the text, no labels.`
-      )
-      setTheme(text.trim())
+      const res = await fetch('/api/forge', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: `Generate a short 1–2 sentence creative direction for a ${activeGenres.join(' + ')} metal song with ${mood} mood, ${tempo} tempo. Make it vivid and visceral. Return only the text, no labels.` }),
+      })
+      if (!res.body) return
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let acc = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        acc += decoder.decode(value, { stream: true })
+        setTheme(acc)
+      }
     } catch { setTheme('Ash falls over a ruined city. The last voice screams into silence.') }
     finally { setInspireLoading(false) }
   }
@@ -243,10 +243,10 @@ export default function Home() {
 
   function buildPrompt() {
     const outMap: Record<string, string> = {
-      full: 'Full Package: title, full lyrics with structure labels, and a Suno/Udio music prompt (max 200 chars) at the end labeled MUSIC PROMPT:',
+      full: 'Full Package: title, full lyrics with structure labels, and at the very end a detailed Suno/Udio music prompt labeled MUSIC PROMPT: — the music prompt must be specific, evocative and include: genre tags, key, BPM, vocal style, guitar tone, drum style, atmosphere, and production style. Max 220 chars.',
       lyrics: 'Full lyrics with structure labels only',
       hooks: 'Hooks and chorus only — the most memorable lines',
-      production: 'Production notes: tuning, tempo, arrangement, sound design, mix direction',
+      production: 'Production notes: tuning, drop, tempo, arrangement, sound design, mix direction, reference artists',
     }
     return `Generate ${outMap[outputType]} for a metal song with these parameters:
 - Subgenres: ${activeGenres.join(' + ')}
@@ -260,28 +260,41 @@ export default function Home() {
 - Structure: ${structure}
 - Theme / Creative Direction: ${theme || 'Open — choose something powerful and visceral'}
 
-Format:
-TITLE: [title]
+Format exactly as:
+TITLE: [song title]
 
 LYRICS:
-[full lyrics with [Verse 1], [Chorus], etc.]
+[full lyrics with section labels like [Verse 1], [Chorus], [Bridge], [Solo] etc.]
 
-MUSIC PROMPT: [prompt]`
+MUSIC PROMPT: [detailed Suno/Udio prompt with genre, key, BPM, vocal style, guitar tone, drum pattern, atmosphere]`
   }
 
   async function generate() {
-    setLoading(true); setResult('')
+    setLoading(true); setIsStreaming(true); setResult('')
     try {
-      const text = await callForge(buildPrompt())
-      setResult(text)
-      const t = text.split('\n').find(l => /^#?\s*TITLE:/i.test(l))?.replace(/^#?\s*TITLE:/i, '').trim() || ''
+      const res = await fetch('/api/forge', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: buildPrompt() }),
+      })
+      if (!res.body) { setResult('Error connecting to API'); return }
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let acc = ''
+      setLoading(false)
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        acc += decoder.decode(value, { stream: true })
+        setResult(acc)
+      }
+      const t = acc.split('\n').find(l => /^#?\s*TITLE:/i.test(l))?.replace(/^#?\s*TITLE:/i, '').trim() || ''
       if (t) {
         const now = new Date()
         setHistory(prev => [{ title: t, genres: activeGenres.slice(0, 2).join(' · '), time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }, ...prev.slice(0, 9)])
       }
       setTheme('')
     } catch { setResult('Error connecting to API') }
-    finally { setLoading(false) }
+    finally { setLoading(false); setIsStreaming(false) }
   }
 
   function handleSave() {
@@ -326,7 +339,6 @@ MUSIC PROMPT: [prompt]`
 
         {/* COL 2 — Hero + Genre + Output + History */}
         <div style={{ ...s.col, background: 'var(--bg-secondary)', borderRight: '1px solid var(--border)' }}>
-
           <div style={{ padding: '40px 20px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 52, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.0, letterSpacing: '-0.03em' }}>
               Forge your next
@@ -511,8 +523,8 @@ MUSIC PROMPT: [prompt]`
           </div>
 
           <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
-            {!result && !loading && <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 20 }}>Your composition will appear here...</div>}
-            {loading && <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 20 }}>Forging your metal track...</div>}
+            {!result && !loading && !isStreaming && <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 20 }}>Your composition will appear here...</div>}
+            {(loading || isStreaming) && !result && <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 20 }}>Forging your metal track...</div>}
             {result && (
               <div>
                 {songTitle && <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 16, fontFamily: "'Playfair Display', serif" }}>{songTitle}</div>}
@@ -534,8 +546,8 @@ MUSIC PROMPT: [prompt]`
             <button onClick={handleSave} disabled={!result} style={{ padding: '10px 16px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: result ? 'var(--text-secondary)' : 'var(--text-muted)', fontSize: 12, cursor: result ? 'pointer' : 'not-allowed', letterSpacing: '0.04em', fontFamily: "'DM Sans', sans-serif" }}>
               Save Draft
             </button>
-            <button onClick={generate} disabled={loading} style={{ flex: 1, padding: 10, background: loading ? 'var(--bg-card)' : 'var(--indigo)', border: 'none', borderRadius: 6, color: loading ? 'var(--text-muted)' : '#fff', fontSize: 13, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', letterSpacing: '0.04em', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.2s' }}>
-              {loading ? 'Forging...' : 'Forge Track ↗'}
+            <button onClick={generate} disabled={loading || isStreaming} style={{ flex: 1, padding: 10, background: (loading || isStreaming) ? 'var(--bg-card)' : 'var(--indigo)', border: 'none', borderRadius: 6, color: (loading || isStreaming) ? 'var(--text-muted)' : '#fff', fontSize: 13, fontWeight: 600, cursor: (loading || isStreaming) ? 'not-allowed' : 'pointer', letterSpacing: '0.04em', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.2s' }}>
+              {(loading || isStreaming) ? 'Forging...' : 'Forge Track ↗'}
             </button>
           </div>
         </div>
@@ -545,7 +557,7 @@ MUSIC PROMPT: [prompt]`
           <div style={{ padding: '16px', borderBottom: '1px solid var(--border)' }}>
             <div style={s.sectionLabel}>Title</div>
             <div style={{ padding: '0 16px', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', minHeight: 24, fontFamily: "'Playfair Display', serif" }}>
-              {loading ? <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: 12 }}>Generating...</span> : songTitle || <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: 12 }}>Title will appear here</span>}
+              {(loading || isStreaming) && !songTitle ? <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: 12 }}>Generating...</span> : songTitle || <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: 12 }}>Title will appear here</span>}
             </div>
             {songTitle && (
               <button onClick={() => handleCopy(songTitle, 'title')} style={{ margin: '8px 16px 0', fontSize: 11, background: 'transparent', border: '1px solid var(--border)', borderRadius: 4, color: copiedField === 'title' ? 'var(--indigo-light)' : 'var(--text-muted)', cursor: 'pointer', padding: '3px 8px', fontFamily: "'DM Sans', sans-serif" }}>
