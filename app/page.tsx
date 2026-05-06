@@ -53,12 +53,12 @@ const MOODS = [
 ]
 
 const MOOD_PRESETS = [
-  { icon: '🌑', label: 'Night',    mood: 'Brooding',   tempo: 'Slow (40–60)',  key: 'B minor',  intensity: 2 },
-  { icon: '⚔️', label: 'War',      mood: 'Triumphant', tempo: 'Fast (160+)',   key: 'E minor',  intensity: 5 },
-  { icon: '🌧', label: 'Doom',     mood: 'Melancholic',tempo: 'Drone (20–40)', key: 'D minor',  intensity: 1 },
-  { icon: '💀', label: 'Brutal',   mood: 'Crushing',   tempo: 'Fast (160+)',   key: 'C# minor', intensity: 5 },
-  { icon: '🏔', label: 'Epic',     mood: 'Epic',       tempo: 'Mid (90–120)',  key: 'Open',     intensity: 4 },
-  { icon: '❄️', label: 'Nihilist', mood: 'Cold',       tempo: 'Fast (160+)',   key: 'F# minor', intensity: 5 },
+  { icon: '🌑', label: 'Night',    mood: 'Brooding',    tempo: 'Slow (40–60)',  key: 'B minor',  intensity: 2 },
+  { icon: '⚔️', label: 'War',      mood: 'Triumphant',  tempo: 'Fast (160+)',   key: 'E minor',  intensity: 5 },
+  { icon: '🌧', label: 'Doom',     mood: 'Melancholic', tempo: 'Drone (20–40)', key: 'D minor',  intensity: 1 },
+  { icon: '💀', label: 'Brutal',   mood: 'Crushing',    tempo: 'Fast (160+)',   key: 'C# minor', intensity: 5 },
+  { icon: '🏔', label: 'Epic',     mood: 'Epic',        tempo: 'Mid (90–120)',  key: 'Open',     intensity: 4 },
+  { icon: '❄️', label: 'Nihilist', mood: 'Cold',        tempo: 'Fast (160+)',   key: 'F# minor', intensity: 5 },
 ]
 
 const KEYS = [
@@ -168,6 +168,7 @@ export default function Home() {
   const [result, setResult] = useState('')
   const [loading, setLoading] = useState(false)
   const [inspireLoading, setInspireLoading] = useState(false)
+  const [randomLoading, setRandomLoading] = useState(false)
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const [history, setHistory] = useState<{ title: string; genres: string; time: string }[]>([])
 
@@ -226,6 +227,18 @@ export default function Home() {
       setTheme(text.trim())
     } catch { setTheme('Ash falls over a ruined city. The last voice screams into silence.') }
     finally { setInspireLoading(false) }
+  }
+
+  async function randomTheme() {
+    setRandomLoading(true); setTheme('')
+    try {
+      const res = await fetch('/api/random-theme', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}),
+      })
+      const data = await res.json()
+      if (data.theme) setTheme(data.theme)
+    } catch { setTheme('A dying sun bleeds over the battlefield. Nothing remains but bone and silence.') }
+    finally { setRandomLoading(false) }
   }
 
   function buildPrompt() {
@@ -300,7 +313,7 @@ MUSIC PROMPT: [prompt]`
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr 1fr', flex: 1, overflow: 'hidden' }}>
 
-        {/* ══ COL 1 — Cover Art only ══ */}
+        {/* COL 1 — Cover Art */}
         <div style={{ ...s.col, background: 'var(--bg-secondary)', borderRight: '1px solid var(--border)' }}>
           <div style={{ padding: '16px' }}>
             <div style={s.sectionLabel}>Cover Art</div>
@@ -311,10 +324,9 @@ MUSIC PROMPT: [prompt]`
           </div>
         </div>
 
-        {/* ══ COL 2 — Hero + Genre + Output + History ══ */}
+        {/* COL 2 — Hero + Genre + Output + History */}
         <div style={{ ...s.col, background: 'var(--bg-secondary)', borderRight: '1px solid var(--border)' }}>
 
-          {/* Hero */}
           <div style={{ padding: '40px 20px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 52, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.0, letterSpacing: '-0.03em' }}>
               Forge your next
@@ -336,10 +348,7 @@ MUSIC PROMPT: [prompt]`
             </button>
           </div>
 
-          {/* Scrollable: Genre + Output + History */}
           <div style={{ flex: 1, overflowY: 'auto' as const }}>
-
-            {/* Genre */}
             <div style={s.sectionLabel}>Subgenre</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5, padding: '0 12px' }}>
               {GENRE_CATEGORIES.map(cat => {
@@ -391,7 +400,6 @@ MUSIC PROMPT: [prompt]`
 
             <div style={{ height: 1, background: 'var(--border)', margin: '12px 0' }} />
 
-            {/* Output */}
             <div style={s.sectionLabel}>Output</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '0 12px' }}>
               {OUTPUT_TYPES.map(o => (
@@ -401,7 +409,6 @@ MUSIC PROMPT: [prompt]`
 
             <div style={{ height: 1, background: 'var(--border)', margin: '12px 0' }} />
 
-            {/* History */}
             <div style={s.sectionLabel}>History</div>
             <div style={{ padding: '0 16px 16px' }}>
               {history.length === 0
@@ -417,9 +424,8 @@ MUSIC PROMPT: [prompt]`
           </div>
         </div>
 
-        {/* ══ COL 3 — Params + Result ══ */}
+        {/* COL 3 — Params + Result */}
         <div style={{ ...s.col, background: 'var(--bg-primary)' }}>
-
           <div style={{ padding: 16, borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0 }}>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
@@ -456,7 +462,12 @@ MUSIC PROMPT: [prompt]`
             </div>
 
             <div>
-              <div style={s.paramLabel}>Theme / Creative Direction</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <div style={s.paramLabel}>Theme / Creative Direction</div>
+                <button onClick={randomTheme} disabled={randomLoading} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, color: randomLoading ? 'var(--text-muted)' : 'var(--text-secondary)', fontSize: 14, cursor: randomLoading ? 'not-allowed' : 'pointer', padding: '2px 8px', lineHeight: 1 }}>
+                  {randomLoading ? '⟳' : '🎲'}
+                </button>
+              </div>
               <textarea value={theme} onChange={e => setTheme(e.target.value)}
                 placeholder="Ash falls over a ruined city. The last voice screams into silence..."
                 style={{ width: '100%', height: 90, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text-secondary)', fontSize: 12, resize: 'none', outline: 'none', fontFamily: "'DM Mono', monospace", lineHeight: 1.7, boxSizing: 'border-box' as const }}
@@ -529,7 +540,7 @@ MUSIC PROMPT: [prompt]`
           </div>
         </div>
 
-        {/* ══ COL 4 — Right Panel ══ */}
+        {/* COL 4 — Right Panel */}
         <div style={{ ...s.col, background: 'var(--bg-secondary)', borderLeft: '1px solid var(--border)' }}>
           <div style={{ padding: '16px', borderBottom: '1px solid var(--border)' }}>
             <div style={s.sectionLabel}>Title</div>
