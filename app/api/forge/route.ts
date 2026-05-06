@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "edge";
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -26,13 +24,17 @@ export async function POST(req: NextRequest) {
     });
 
     const data = await response.json();
+
+    if (!response.ok) {
+      return NextResponse.json({ error: JSON.stringify(data) }, { status: 500 });
+    }
+
     const text = data.content
       ?.map((b: { type: string; text?: string }) => (b.type === "text" ? b.text : ""))
       .join("") || "";
 
     return NextResponse.json({ result: text });
   } catch (err) {
-    console.error("Forge API error:", err);
-    return NextResponse.json({ error: "Generation failed" }, { status: 500 });
+    return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }
