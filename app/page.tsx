@@ -243,7 +243,7 @@ export default function Home() {
 
   function buildPrompt() {
     const outMap: Record<string, string> = {
-      full: 'Full Package: title, full lyrics with structure labels, and at the very end a detailed Suno/Udio music prompt labeled MUSIC PROMPT: — the music prompt must be specific, evocative and include: genre tags, key, BPM, vocal style, guitar tone, drum style, atmosphere, and production style. Max 220 chars.',
+      full: 'Full Package: title, full lyrics with structure labels, and at the very end a detailed Suno/Udio music prompt labeled MUSIC PROMPT: — the music prompt must include: genre tags, key, BPM, vocal style, guitar tone, drum style, atmosphere, and production style. Max 220 chars.',
       lyrics: 'Full lyrics with structure labels only',
       hooks: 'Hooks and chorus only — the most memorable lines',
       production: 'Production notes: tuning, drop, tempo, arrangement, sound design, mix direction, reference artists',
@@ -297,12 +297,42 @@ MUSIC PROMPT: [detailed Suno/Udio prompt with genre, key, BPM, vocal style, guit
     finally { setLoading(false); setIsStreaming(false) }
   }
 
-  function handleSave() {
+  async function refine() {
+    if (!lyrics) return
+    setIsStreaming(true); setResult('')
+    try {
+      const res = await fetch('/api/forge', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: `Refine these metal lyrics to be more powerful, visceral and poetic. Keep the structure. Make imagery more intense, chorus more anthemic:\n\n${lyrics}\n\nReturn only the refined lyrics with section labels.` }),
+      })
+      if (!res.body) return
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let acc = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        acc += decoder.decode(value, { stream: true })
+        setResult(acc)
+      }
+    } catch { /* silent */ }
+    finally { setIsStreaming(false) }
+  }
+
+  function handleSaveTxt() {
     const blob = new Blob([result], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url; a.download = `${songTitle || 'metal-forge'}.txt`; a.click()
     URL.revokeObjectURL(url)
+  }
+
+  function handleSavePdf() {
+    const win = window.open('', '_blank')
+    if (!win) return
+    win.document.write(`<html><head><title>${songTitle}</title><style>body{font-family:monospace;padding:40px;max-width:800px;margin:0 auto;line-height:1.8;}h1{font-size:24px;margin-bottom:24px;}pre{white-space:pre-wrap;font-size:13px;}</style></head><body><h1>${songTitle}</h1><pre>${result}</pre></body></html>`)
+    win.document.close()
+    win.print()
   }
 
   return (
@@ -318,9 +348,11 @@ MUSIC PROMPT: [detailed Suno/Udio prompt with genre, key, BPM, vocal style, guit
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          {['New Track', 'Export TXT', 'Export PDF', 'Docs', 'GitHub'].map(btn => (
-            <button key={btn} onClick={btn === 'Export TXT' || btn === 'Export PDF' ? handleSave : btn === 'New Track' ? clearAll : undefined} style={{ padding: '6px 14px', fontSize: 11, letterSpacing: '0.1em', border: btn === 'Export PDF' ? 'none' : '1px solid var(--border)', background: btn === 'Export PDF' ? 'var(--indigo)' : 'transparent', color: btn === 'Export PDF' ? '#fff' : 'var(--text-secondary)', borderRadius: 6, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>{btn}</button>
+          {['New Track', 'Docs', 'GitHub'].map(btn => (
+            <button key={btn} onClick={btn === 'New Track' ? clearAll : undefined} style={{ padding: '6px 14px', fontSize: 11, letterSpacing: '0.1em', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', borderRadius: 6, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>{btn}</button>
           ))}
+          <button onClick={handleSaveTxt} disabled={!result} style={{ padding: '6px 14px', fontSize: 11, letterSpacing: '0.1em', border: '1px solid var(--border)', background: 'transparent', color: result ? 'var(--text-secondary)' : 'var(--text-muted)', borderRadius: 6, cursor: result ? 'pointer' : 'not-allowed', fontFamily: "'DM Sans', sans-serif" }}>Export AI TXT</button>
+          <button onClick={handleSavePdf} disabled={!result} style={{ padding: '6px 14px', fontSize: 11, letterSpacing: '0.1em', border: 'none', background: result ? 'var(--indigo)' : '#450a0a', color: result ? '#fff' : 'var(--text-muted)', borderRadius: 6, cursor: result ? 'pointer' : 'not-allowed', fontFamily: "'DM Sans', sans-serif" }}>Export All PDF</button>
         </div>
       </div>
 
@@ -522,33 +554,51 @@ MUSIC PROMPT: [detailed Suno/Udio prompt with genre, key, BPM, vocal style, guit
             </div>
           </div>
 
-          <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
-            {!result && !loading && !isStreaming && <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 20 }}>Your composition will appear here...</div>}
-            {(loading || isStreaming) && !result && <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 20 }}>Forging your metal track...</div>}
-            {result && (
-              <div>
-                {songTitle && <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 16, fontFamily: "'Playfair Display', serif" }}>{songTitle}</div>}
-                <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8, whiteSpace: 'pre-wrap', fontFamily: "'DM Mono', monospace" }}>{lyrics}</div>
-                {musicPrompt && (
-                  <div style={{ marginTop: 20, padding: 12, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8 }}>
-                    <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: 6 }}>MUSIC PROMPT</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{musicPrompt}</div>
-                    <button onClick={() => handleCopy(musicPrompt, 'music')} style={{ marginTop: 8, fontSize: 11, background: 'transparent', border: '1px solid var(--border)', borderRadius: 4, color: copiedField === 'music' ? 'var(--indigo-light)' : 'var(--text-muted)', cursor: 'pointer', padding: '3px 8px', fontFamily: "'DM Sans', sans-serif" }}>
-                      {copiedField === 'music' ? 'Copied!' : 'Copy Prompt'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          {/* Result area */}
+          <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
 
-          <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8, flexShrink: 0 }}>
-            <button onClick={handleSave} disabled={!result} style={{ padding: '10px 16px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: result ? 'var(--text-secondary)' : 'var(--text-muted)', fontSize: 12, cursor: result ? 'pointer' : 'not-allowed', letterSpacing: '0.04em', fontFamily: "'DM Sans', sans-serif" }}>
-              Save Draft
-            </button>
-            <button onClick={generate} disabled={loading || isStreaming} style={{ flex: 1, padding: 10, background: (loading || isStreaming) ? 'var(--bg-card)' : 'var(--indigo)', border: 'none', borderRadius: 6, color: (loading || isStreaming) ? 'var(--text-muted)' : '#fff', fontSize: 13, fontWeight: 600, cursor: (loading || isStreaming) ? 'not-allowed' : 'pointer', letterSpacing: '0.04em', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.2s' }}>
-              {(loading || isStreaming) ? 'Forging...' : 'Forge Track ↗'}
-            </button>
+            {/* Composition header with buttons */}
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <div style={{ fontSize: 11, letterSpacing: '0.12em', color: 'var(--text-muted)', textTransform: 'uppercase' as const, fontWeight: 500 }}>Composition</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={refine} disabled={!result || isStreaming} style={{ fontSize: 11, padding: '4px 10px', border: '1px solid var(--border)', background: 'transparent', color: result ? 'var(--text-secondary)' : 'var(--text-muted)', borderRadius: 4, cursor: result ? 'pointer' : 'not-allowed', fontFamily: "'DM Sans', sans-serif" }}>Refine</button>
+                <button onClick={() => handleCopy(result, 'result')} disabled={!result} style={{ fontSize: 11, padding: '4px 10px', border: '1px solid var(--border)', background: 'transparent', color: result ? 'var(--text-secondary)' : 'var(--text-muted)', borderRadius: 4, cursor: result ? 'pointer' : 'not-allowed', fontFamily: "'DM Sans', sans-serif" }}>{copiedField === 'result' ? 'Copied!' : 'Copy'}</button>
+              </div>
+            </div>
+
+            <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
+              {!result && !loading && !isStreaming && <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 20 }}>Your composition will appear here...</div>}
+              {(loading || isStreaming) && !result && <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 20 }}>Forging your metal track...</div>}
+              {result && (
+                <div>
+                  {songTitle && <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 16, fontFamily: "'Playfair Display', serif" }}>{songTitle}</div>}
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8, whiteSpace: 'pre-wrap', fontFamily: "'DM Mono', monospace" }}>{lyrics}</div>
+                  {musicPrompt && (
+                    <div style={{ marginTop: 20, padding: 12, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8 }}>
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: 6 }}>MUSIC PROMPT</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{musicPrompt}</div>
+                      <button onClick={() => handleCopy(musicPrompt, 'music')} style={{ marginTop: 8, fontSize: 11, background: 'transparent', border: '1px solid var(--border)', borderRadius: 4, color: copiedField === 'music' ? 'var(--indigo-light)' : 'var(--text-muted)', cursor: 'pointer', padding: '3px 8px', fontFamily: "'DM Sans', sans-serif" }}>
+                        {copiedField === 'music' ? 'Copied!' : 'Copy Prompt'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Bottom bar with Download TXT / Download PDF */}
+            <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8, flexShrink: 0 }}>
+              <button onClick={handleSaveTxt} disabled={!result} style={{ padding: '10px 16px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: result ? 'var(--text-secondary)' : 'var(--text-muted)', fontSize: 12, cursor: result ? 'pointer' : 'not-allowed', letterSpacing: '0.04em', fontFamily: "'DM Sans', sans-serif" }}>
+                Download TXT
+              </button>
+              <button onClick={handleSavePdf} disabled={!result} style={{ padding: '10px 16px', background: result ? 'var(--border-indigo)' : 'transparent', border: `1px solid ${result ? 'var(--indigo-dim)' : 'var(--border)'}`, borderRadius: 6, color: result ? 'var(--indigo-light)' : 'var(--text-muted)', fontSize: 12, cursor: result ? 'pointer' : 'not-allowed', letterSpacing: '0.04em', fontFamily: "'DM Sans', sans-serif" }}>
+                Download PDF
+              </button>
+              <div style={{ flex: 1 }} />
+              <button onClick={generate} disabled={loading || isStreaming} style={{ padding: '10px 32px', background: (loading || isStreaming) ? 'var(--bg-card)' : 'var(--indigo)', border: 'none', borderRadius: 6, color: (loading || isStreaming) ? 'var(--text-muted)' : '#fff', fontSize: 13, fontWeight: 600, cursor: (loading || isStreaming) ? 'not-allowed' : 'pointer', letterSpacing: '0.04em', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.2s' }}>
+                {(loading || isStreaming) ? 'Forging...' : 'Forge Track ↗'}
+              </button>
+            </div>
           </div>
         </div>
 
