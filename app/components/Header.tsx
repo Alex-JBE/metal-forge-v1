@@ -10,7 +10,7 @@ interface HeaderProps {
 }
 
 export default function Header({ title, composition, coverResult, videoResult, onClear }: HeaderProps) {
-  const hasContent = composition || coverResult || videoResult;
+  const hasContent = !!(composition || coverResult || videoResult);
 
   return (
     <header style={{
@@ -34,24 +34,20 @@ export default function Header({ title, composition, coverResult, videoResult, o
       </div>
 
       <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-        {hasContent && (
-          <>
-            <button onClick={onClear} style={{ padding: "6px 14px", background: "transparent", border: "1px solid #333", borderRadius: "6px", color: "#a0a0a0", fontSize: "12px", cursor: "pointer", letterSpacing: "0.04em", fontFamily: "'DM Sans', sans-serif" }}>
-              New Track
-            </button>
-            <button onClick={() => exportAllTXT(title, composition, coverResult, videoResult)} style={{ padding: "6px 14px", background: "transparent", border: "1px solid #666", borderRadius: "6px", color: "#f0f0f0", fontSize: "12px", cursor: "pointer", letterSpacing: "0.04em", fontFamily: "'DM Sans', sans-serif" }}>
-              Export All TXT
-            </button>
-            <button onClick={() => exportAllPDF(title, composition, coverResult, videoResult)} style={{ padding: "6px 14px", background: "#e0e0e0", border: "none", borderRadius: "6px", color: "#0f0f0f", fontSize: "12px", cursor: "pointer", letterSpacing: "0.04em", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
-              Export All PDF
-            </button>
-          </>
-        )}
-        {["Docs", "GitHub"].map(label => (
-          <button key={label} style={{ padding: "6px 14px", background: "transparent", border: "1px solid #2a2a2a", borderRadius: "6px", color: "#a0a0a0", fontSize: "12px", cursor: "pointer", letterSpacing: "0.04em", fontFamily: "'DM Sans', sans-serif" }}>
-            {label}
+        <button onClick={onClear} style={{ padding: "6px 14px", background: "transparent", border: "1px solid #333", borderRadius: "6px", color: "#a0a0a0", fontSize: "12px", cursor: "pointer", letterSpacing: "0.04em", fontFamily: "'DM Sans', sans-serif" }}>
+          New Track
+        </button>
+        {hasContent && composition && (
+          <button style={{ padding: "6px 14px", background: "rgba(224,224,224,0.08)", border: "1px solid #555", borderRadius: "6px", color: "#e0e0e0", fontSize: "12px", cursor: "pointer", letterSpacing: "0.04em", fontFamily: "'DM Sans', sans-serif" }}>
+            Suno ↗
           </button>
-        ))}
+        )}
+        <button onClick={() => exportAllTXT(title, composition, coverResult, videoResult)} disabled={!hasContent} style={{ padding: "6px 14px", background: "transparent", border: "1px solid #555", borderRadius: "6px", color: hasContent ? "#f0f0f0" : "#404040", fontSize: "12px", cursor: hasContent ? "pointer" : "not-allowed", letterSpacing: "0.04em", fontFamily: "'DM Sans', sans-serif" }}>
+          Export TXT
+        </button>
+        <button onClick={() => exportAllPDF(title, composition, coverResult, videoResult)} disabled={!hasContent} style={{ padding: "6px 14px", background: hasContent ? "#e0e0e0" : "#1a1a1a", border: "none", borderRadius: "6px", color: hasContent ? "#0f0f0f" : "#404040", fontSize: "12px", cursor: hasContent ? "pointer" : "not-allowed", letterSpacing: "0.04em", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
+          Export PDF
+        </button>
       </div>
     </header>
   );
