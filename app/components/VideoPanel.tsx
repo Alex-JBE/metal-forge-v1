@@ -61,10 +61,7 @@ export default function VideoPanel({ title, genre, mood, theme, composition, com
   const clips = parseVideoResult(result);
 
   async function generate() {
-    setLoading(true);
-    setResult("");
-    onResult("");
-    setShowBibles(false);
+    setLoading(true); setResult(""); onResult(""); setShowBibles(false);
     try {
       const res = await fetch("/api/video", {
         method: "POST",
@@ -80,13 +77,10 @@ export default function VideoPanel({ title, genre, mood, theme, composition, com
         const { done, value } = await reader.read();
         if (done) break;
         acc += decoder.decode(value, { stream: true });
-        setResult(acc);
-        onResult(acc);
+        setResult(acc); onResult(acc);
       }
       setShowBibles(true);
-    } catch {
-      setLoading(false);
-    }
+    } catch { setLoading(false); }
   }
 
   function copy(text: string, key: string) {
@@ -111,10 +105,10 @@ export default function VideoPanel({ title, genre, mood, theme, composition, com
 
   const segBtnStyle = (active: boolean) => ({
     flex: 1, padding: "5px 4px", fontSize: "10px",
-    background: active ? "rgba(220,38,38,0.15)" : "#130808",
-    border: `1px solid ${active ? "#991b1b" : "#2a1010"}`,
+    background: active ? "rgba(224,224,224,0.08)" : "#1a1a1a",
+    border: `1px solid ${active ? "#555" : "#2a2a2a"}`,
     borderRadius: "5px",
-    color: active ? "#fca5a5" : "#9a8080",
+    color: active ? "#e0e0e0" : "#606060",
     cursor: "pointer" as const,
     letterSpacing: "0.02em",
     fontFamily: "'DM Sans', sans-serif",
@@ -123,21 +117,21 @@ export default function VideoPanel({ title, genre, mood, theme, composition, com
   });
 
   return (
-    <div style={{ background: "#0d0a0a", borderLeft: "1px solid #2a1010", display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
-      <div style={{ padding: "16px", borderBottom: "1px solid #2a1010" }}>
-        <div style={{ fontSize: "10px", letterSpacing: "0.12em", color: "#7f1d1d", textTransform: "uppercase", marginBottom: "4px" }}>Video Script</div>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "16px", color: "#f0e8e8" }}>Scene Prompts</div>
+    <div style={{ background: "#141414", borderLeft: "1px solid #2a2a2a", display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+      <div style={{ padding: "16px", borderBottom: "1px solid #2a2a2a" }}>
+        <div style={{ fontSize: "10px", letterSpacing: "0.12em", color: "#505050", textTransform: "uppercase", marginBottom: "4px" }}>Video Script</div>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "16px", color: "#f0f0f0" }}>Scene Prompts</div>
       </div>
 
-      <div style={{ padding: "12px 16px", borderBottom: "1px solid #2a1010", display: "flex", flexDirection: "column", gap: "10px" }}>
+      <div style={{ padding: "12px 16px", borderBottom: "1px solid #2a2a2a", display: "flex", flexDirection: "column", gap: "10px" }}>
         <div>
-          <div style={{ fontSize: "10px", color: "#9a8080", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "6px" }}>Track Duration</div>
+          <div style={{ fontSize: "10px", color: "#606060", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "6px" }}>Track Duration</div>
           <input type="text" value={duration} onChange={e => setDuration(e.target.value)} placeholder="3:30"
-            style={{ width: "100%", padding: "7px 10px", background: "#130808", border: "1px solid #2a1010", borderRadius: "6px", color: "#f0e8e8", fontSize: "13px", fontFamily: "'DM Mono', monospace", outline: "none", boxSizing: "border-box" as const }} />
+            style={{ width: "100%", padding: "7px 10px", background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: "6px", color: "#f0f0f0", fontSize: "13px", fontFamily: "'DM Mono', monospace", outline: "none", boxSizing: "border-box" as const }} />
         </div>
 
         <div>
-          <div style={{ fontSize: "10px", color: "#9a8080", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "6px" }}>Mode</div>
+          <div style={{ fontSize: "10px", color: "#606060", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "6px" }}>Mode</div>
           <div style={{ display: "flex", gap: "4px" }}>
             <button onClick={() => setSegMode("split_by_duration")} style={segBtnStyle(segMode === "split_by_duration")}>By Duration</button>
             <button onClick={() => setSegMode("split_by_scene_count")} style={segBtnStyle(segMode === "split_by_scene_count")}>By Scenes</button>
@@ -147,10 +141,10 @@ export default function VideoPanel({ title, genre, mood, theme, composition, com
 
         {segMode === "split_by_duration" && (
           <div>
-            <div style={{ fontSize: "10px", color: "#9a8080", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "6px" }}>Clip Length</div>
+            <div style={{ fontSize: "10px", color: "#606060", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "6px" }}>Clip Length</div>
             <div style={{ display: "flex", gap: "6px" }}>
               {CLIP_LENGTHS.map(l => (
-                <button key={l} onClick={() => setClipLength(l)} style={{ flex: 1, padding: "6px", background: clipLength === l ? "rgba(220,38,38,0.15)" : "#130808", border: `1px solid ${clipLength === l ? "#991b1b" : "#2a1010"}`, borderRadius: "6px", color: clipLength === l ? "#fca5a5" : "#9a8080", fontSize: "12px", cursor: "pointer", fontFamily: "'DM Mono', monospace" }}>
+                <button key={l} onClick={() => setClipLength(l)} style={{ flex: 1, padding: "6px", background: clipLength === l ? "rgba(224,224,224,0.08)" : "#1a1a1a", border: `1px solid ${clipLength === l ? "#555" : "#2a2a2a"}`, borderRadius: "6px", color: clipLength === l ? "#e0e0e0" : "#606060", fontSize: "12px", cursor: "pointer", fontFamily: "'DM Mono', monospace" }}>
                   {l}s
                 </button>
               ))}
@@ -160,10 +154,10 @@ export default function VideoPanel({ title, genre, mood, theme, composition, com
 
         {segMode === "split_by_scene_count" && (
           <div>
-            <div style={{ fontSize: "10px", color: "#9a8080", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "6px" }}>Number of Scenes</div>
+            <div style={{ fontSize: "10px", color: "#606060", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "6px" }}>Number of Scenes</div>
             <div style={{ display: "flex", gap: "6px" }}>
               {["6", "8", "10", "12", "16"].map(n => (
-                <button key={n} onClick={() => setSceneCount(n)} style={{ flex: 1, padding: "6px", background: sceneCount === n ? "rgba(220,38,38,0.15)" : "#130808", border: `1px solid ${sceneCount === n ? "#991b1b" : "#2a1010"}`, borderRadius: "6px", color: sceneCount === n ? "#fca5a5" : "#9a8080", fontSize: "12px", cursor: "pointer", fontFamily: "'DM Mono', monospace" }}>
+                <button key={n} onClick={() => setSceneCount(n)} style={{ flex: 1, padding: "6px", background: sceneCount === n ? "rgba(224,224,224,0.08)" : "#1a1a1a", border: `1px solid ${sceneCount === n ? "#555" : "#2a2a2a"}`, borderRadius: "6px", color: sceneCount === n ? "#e0e0e0" : "#606060", fontSize: "12px", cursor: "pointer", fontFamily: "'DM Mono', monospace" }}>
                   {n}
                 </button>
               ))}
@@ -172,24 +166,24 @@ export default function VideoPanel({ title, genre, mood, theme, composition, com
         )}
 
         {previewClips !== null && previewClips > 0 && !result && (
-          <div style={{ padding: "7px 10px", background: "#130808", border: "1px solid #2a1010", borderRadius: "6px", fontSize: "11px", color: "#7f1d1d" }}>
-            {duration} ÷ {clipLength}s = <span style={{ color: "#dc2626", fontWeight: 500 }}>{previewClips} clips</span>
+          <div style={{ padding: "7px 10px", background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: "6px", fontSize: "11px", color: "#606060" }}>
+            {duration} ÷ {clipLength}s = <span style={{ color: "#e0e0e0", fontWeight: 500 }}>{previewClips} clips</span>
           </div>
         )}
       </div>
 
       {showBibles && characterBible && (
-        <div style={{ borderBottom: "1px solid #2a1010" }}>
-          <button onClick={() => setShowBibles(b => !b)} style={{ width: "100%", padding: "8px 16px", background: "transparent", border: "none", display: "flex", alignItems: "center", justifyContent: "space-between", color: "#7f1d1d", fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>
+        <div style={{ borderBottom: "1px solid #2a2a2a" }}>
+          <button onClick={() => setShowBibles(b => !b)} style={{ width: "100%", padding: "8px 16px", background: "transparent", border: "none", display: "flex", alignItems: "center", justifyContent: "space-between", color: "#606060", fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>
             <span>Character · World · Arc</span>
             <span>{showBibles ? "▴" : "▾"}</span>
           </button>
           {showBibles && (
             <div style={{ padding: "0 16px 12px", display: "flex", flexDirection: "column", gap: "8px" }}>
               {[{ label: "Character Bible", text: characterBible }, { label: "World Bible", text: worldBible }, { label: "Story Arc", text: storyArc }].map(({ label, text }) => text ? (
-                <div key={label} style={{ background: "#130808", border: "1px solid #2a1010", borderRadius: "6px", overflow: "hidden" }}>
-                  <div style={{ padding: "5px 10px", background: "#0d0a0a", borderBottom: "1px solid #2a1010", fontSize: "9px", color: "#dc2626", letterSpacing: "0.1em", textTransform: "uppercase" }}>{label}</div>
-                  <div style={{ padding: "8px 10px", fontSize: "11px", color: "#c8b8b8", lineHeight: "1.6" }}>{text}</div>
+                <div key={label} style={{ background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: "6px", overflow: "hidden" }}>
+                  <div style={{ padding: "5px 10px", background: "#141414", borderBottom: "1px solid #2a2a2a", fontSize: "9px", color: "#808080", letterSpacing: "0.1em", textTransform: "uppercase" }}>{label}</div>
+                  <div style={{ padding: "8px 10px", fontSize: "11px", color: "#a0a0a0", lineHeight: "1.6" }}>{text}</div>
                 </div>
               ) : null)}
             </div>
@@ -198,12 +192,12 @@ export default function VideoPanel({ title, genre, mood, theme, composition, com
       )}
 
       {clips.length > 0 && (
-        <div style={{ padding: "8px 16px", borderBottom: "1px solid #2a1010", display: "flex", gap: "16px", alignItems: "center" }}>
-          <div><div style={{ fontSize: "10px", color: "#9a8080", letterSpacing: "0.06em" }}>Duration</div><div style={{ fontSize: "13px", color: "#dc2626", fontFamily: "'DM Mono', monospace" }}>{duration || "—"}</div></div>
-          <div><div style={{ fontSize: "10px", color: "#9a8080", letterSpacing: "0.06em" }}>Clips</div><div style={{ fontSize: "13px", color: "#dc2626", fontFamily: "'DM Mono', monospace" }}>{clips.length}</div></div>
-          <div><div style={{ fontSize: "10px", color: "#9a8080", letterSpacing: "0.06em" }}>Mode</div><div style={{ fontSize: "11px", color: "#dc2626", fontFamily: "'DM Mono', monospace" }}>{segMode === "split_by_duration" ? `${clipLength}s` : segMode === "split_by_scene_count" ? `${sceneCount} sc` : "full"}</div></div>
+        <div style={{ padding: "8px 16px", borderBottom: "1px solid #2a2a2a", display: "flex", gap: "16px", alignItems: "center" }}>
+          <div><div style={{ fontSize: "10px", color: "#606060", letterSpacing: "0.06em" }}>Duration</div><div style={{ fontSize: "13px", color: "#e0e0e0", fontFamily: "'DM Mono', monospace" }}>{duration || "—"}</div></div>
+          <div><div style={{ fontSize: "10px", color: "#606060", letterSpacing: "0.06em" }}>Clips</div><div style={{ fontSize: "13px", color: "#e0e0e0", fontFamily: "'DM Mono', monospace" }}>{clips.length}</div></div>
+          <div><div style={{ fontSize: "10px", color: "#606060", letterSpacing: "0.06em" }}>Mode</div><div style={{ fontSize: "11px", color: "#e0e0e0", fontFamily: "'DM Mono', monospace" }}>{segMode === "split_by_duration" ? `${clipLength}s` : segMode === "split_by_scene_count" ? `${sceneCount} sc` : "full"}</div></div>
           <div style={{ marginLeft: "auto" }}>
-            <button onClick={copyAll} style={{ padding: "4px 10px", background: "transparent", border: "1px solid #2a1010", borderRadius: "4px", color: copied === "all" ? "#dc2626" : "#f0e8e8", fontSize: "11px", cursor: "pointer" }}>
+            <button onClick={copyAll} style={{ padding: "4px 10px", background: "transparent", border: "1px solid #2a2a2a", borderRadius: "4px", color: copied === "all" ? "#e0e0e0" : "#f0f0f0", fontSize: "11px", cursor: "pointer" }}>
               {copied === "all" ? "Copied ✓" : "Copy All"}
             </button>
           </div>
@@ -211,34 +205,34 @@ export default function VideoPanel({ title, genre, mood, theme, composition, com
       )}
 
       <div style={{ flex: 1, overflow: "auto", padding: "12px 16px" }}>
-        {loading && <div style={{ color: "#9a8080", fontSize: "12px", textAlign: "center", paddingTop: "24px" }}><span style={{ color: "#dc2626" }}>●</span> Writing scene prompts...</div>}
+        {loading && <div style={{ color: "#606060", fontSize: "12px", textAlign: "center", paddingTop: "24px" }}><span style={{ color: "#e0e0e0" }}>●</span> Writing scene prompts...</div>}
         {!loading && !result && (
-          <div style={{ color: "#9a8080", fontSize: "12px", textAlign: "center", paddingTop: "24px", fontStyle: "italic" }}>
+          <div style={{ color: "#505050", fontSize: "12px", textAlign: "center", paddingTop: "24px", fontStyle: "italic" }}>
             {compositionLoading ? "Waiting for composition..." : !composition ? "Generate a composition first" : "Set duration, then generate"}
           </div>
         )}
         {clips.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {clips.map(clip => (
-              <div key={clip.id} style={{ background: "#130808", border: "1px solid #2a1010", borderRadius: "6px", overflow: "hidden" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: "#0d0a0a", borderBottom: "1px solid #2a1010" }}>
-                  <span style={{ fontSize: "10px", color: "#dc2626", fontFamily: "'DM Mono', monospace", letterSpacing: "0.06em" }}>CLIP {clip.id.padStart(2, "0")}</span>
-                  <button onClick={() => copy(clip.prompt, clip.id)} style={{ fontSize: "10px", color: copied === clip.id ? "#dc2626" : "#f0e8e8", background: "transparent", border: "1px solid #9a8080", borderRadius: "4px", padding: "2px 6px", cursor: "pointer" }}>
+              <div key={clip.id} style={{ background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: "6px", overflow: "hidden" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: "#141414", borderBottom: "1px solid #2a2a2a" }}>
+                  <span style={{ fontSize: "10px", color: "#808080", fontFamily: "'DM Mono', monospace", letterSpacing: "0.06em" }}>CLIP {clip.id.padStart(2, "0")}</span>
+                  <button onClick={() => copy(clip.prompt, clip.id)} style={{ fontSize: "10px", color: copied === clip.id ? "#e0e0e0" : "#f0f0f0", background: "transparent", border: "1px solid #555", borderRadius: "4px", padding: "2px 6px", cursor: "pointer" }}>
                     {copied === clip.id ? "✓" : "Copy"}
                   </button>
                 </div>
-                <div style={{ padding: "8px 10px", fontSize: "11px", color: "#c8b8b8", lineHeight: "1.6" }}>{clip.prompt}</div>
+                <div style={{ padding: "8px 10px", fontSize: "11px", color: "#a0a0a0", lineHeight: "1.6" }}>{clip.prompt}</div>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      <div style={{ padding: "12px 16px", borderTop: "1px solid #2a1010", display: "flex", gap: "6px" }}>
+      <div style={{ padding: "12px 16px", borderTop: "1px solid #2a2a2a", display: "flex", gap: "6px" }}>
         {result && (
-          <button onClick={downloadTXT} style={{ padding: "10px 12px", background: "transparent", border: "1px solid #9a8080", borderRadius: "6px", color: "#f0e8e8", fontSize: "11px", cursor: "pointer", letterSpacing: "0.04em", fontFamily: "'DM Sans', sans-serif" }}>TXT ↓</button>
+          <button onClick={downloadTXT} style={{ padding: "10px 12px", background: "transparent", border: "1px solid #555", borderRadius: "6px", color: "#f0f0f0", fontSize: "11px", cursor: "pointer", letterSpacing: "0.04em", fontFamily: "'DM Sans', sans-serif" }}>TXT ↓</button>
         )}
-        <button onClick={generate} disabled={isDisabled} style={{ flex: 1, padding: "10px", background: isDisabled ? "#130808" : "rgba(220,38,38,0.15)", border: "1px solid #991b1b", borderRadius: "6px", color: isDisabled ? "#5a3030" : "#fca5a5", fontSize: "12px", letterSpacing: "0.06em", textTransform: "uppercase", cursor: isDisabled ? "not-allowed" : "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s" }}>
+        <button onClick={generate} disabled={isDisabled} style={{ flex: 1, padding: "10px", background: isDisabled ? "#1a1a1a" : "rgba(224,224,224,0.08)", border: "1px solid #555", borderRadius: "6px", color: isDisabled ? "#404040" : "#e0e0e0", fontSize: "12px", letterSpacing: "0.06em", textTransform: "uppercase", cursor: isDisabled ? "not-allowed" : "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s" }}>
           {loading ? "Generating..." : compositionLoading ? "Waiting..." : !composition ? "Generate composition first" : "Generate Video Script ↗"}
         </button>
       </div>
