@@ -91,10 +91,10 @@ function SectionBlock({ label, sectionKey, content, onRefine }: {
   return (
     <div style={{ border: "1px solid #2a2a2a", borderRadius: "8px", overflow: "hidden", marginBottom: "10px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px", background: "#141414", borderBottom: "1px solid #2a2a2a" }}>
-        <span style={{ fontSize: "10px", fontWeight: 500, color: "#a0a0a0", letterSpacing: "0.1em", textTransform: "uppercase" }}>{label}</span>
+        <span style={{ fontSize: "10px", fontWeight: 500, color: "#808080", letterSpacing: "0.1em", textTransform: "uppercase" }}>{label}</span>
         <div style={{ display: "flex", gap: "6px" }}>
-          <button onClick={() => setShowRefine(!showRefine)} style={{ fontSize: "11px", color: showRefine ? "#e0e0e0" : "#606060", background: showRefine ? "rgba(224,224,224,0.08)" : "transparent", border: `1px solid ${showRefine ? "#555" : "#2a2a2a"}`, borderRadius: "4px", padding: "3px 8px", cursor: "pointer" }}>Refine</button>
-          <button onClick={() => { navigator.clipboard.writeText(localContent); setCopied(true); setTimeout(() => setCopied(false), 1500); }} style={{ fontSize: "11px", color: copied ? "#e0e0e0" : "#f0f0f0", background: "transparent", border: "1px solid #555", borderRadius: "4px", padding: "3px 8px", cursor: "pointer" }}>{copied ? "Copied ✓" : "Copy"}</button>
+          <button onClick={() => setShowRefine(!showRefine)} style={{ fontSize: "11px", color: showRefine ? "#e0e0e0" : "#606060", background: showRefine ? "rgba(224,224,224,0.08)" : "transparent", border: `1px solid ${showRefine ? "#555" : "#2a2a2a"}`, borderRadius: "4px", padding: "3px 8px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Refine</button>
+          <button onClick={() => { navigator.clipboard.writeText(localContent); setCopied(true); setTimeout(() => setCopied(false), 1500); }} style={{ fontSize: "11px", color: copied ? "#e0e0e0" : "#f0f0f0", background: "transparent", border: "1px solid #555", borderRadius: "4px", padding: "3px 8px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>{copied ? "Copied ✓" : "Copy"}</button>
         </div>
       </div>
 
@@ -164,11 +164,13 @@ export default function ResultPanel({ result, loading, isStreaming }: ResultPane
 
   return (
     <div style={rootStyle}>
-      <div style={{ padding: "16px" }}>
-        <div style={{ display: "flex", gap: "6px", marginBottom: "12px", justifyContent: "flex-end" }}>
-          <button onClick={() => exportTXT(title, result)} style={{ fontSize: "11px", padding: "5px 12px", background: "transparent", border: "1px solid #555", borderRadius: "4px", color: "#f0f0f0", cursor: "pointer", letterSpacing: "0.04em", fontFamily: "'DM Sans', sans-serif" }}>Download TXT</button>
-          <button onClick={() => exportPDF(title, result)} style={{ fontSize: "11px", padding: "5px 12px", background: "#e0e0e0", border: "none", borderRadius: "4px", color: "#0f0f0f", cursor: "pointer", letterSpacing: "0.04em", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>Download PDF</button>
-        </div>
+      {/* Download buttons above result — like Pop Forge */}
+      <div style={{ padding: "10px 16px", borderBottom: "1px solid #2a2a2a", display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "6px", flexShrink: 0 }}>
+        <button onClick={() => exportTXT(title, result)} style={{ fontSize: "11px", padding: "5px 12px", background: "transparent", border: "1px solid #555", borderRadius: "4px", color: "#f0f0f0", cursor: "pointer", letterSpacing: "0.04em", fontFamily: "'DM Sans', sans-serif" }}>Download TXT</button>
+        <button onClick={() => exportPDF(title, result)} style={{ fontSize: "11px", padding: "5px 12px", background: "#e0e0e0", border: "none", borderRadius: "4px", color: "#0f0f0f", cursor: "pointer", letterSpacing: "0.04em", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>Download PDF</button>
+      </div>
+
+      <div style={{ flex: 1, overflow: "auto", padding: "16px" }}>
         {sectionOrder.map(key => {
           const content = refinedSections[key] || sections[key];
           return content ? <SectionBlock key={key} label={SECTION_LABELS[key] || key} sectionKey={key} content={content} onRefine={(k, v) => setRefinedSections(prev => ({ ...prev, [k]: v }))} /> : null;
